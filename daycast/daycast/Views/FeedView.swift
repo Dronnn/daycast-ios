@@ -55,6 +55,12 @@ struct FeedView: View {
             .sheet(item: $viewModel.editingItemId) { _ in
                 editSheet
             }
+            .fullScreenCover(isPresented: $viewModel.showCamera) {
+                CameraView { image in
+                    Task { await viewModel.uploadCameraImage(image) }
+                }
+                .ignoresSafeArea()
+            }
         }
     }
 
@@ -254,6 +260,15 @@ struct FeedView: View {
         VStack(spacing: 0) {
             Divider()
             HStack(spacing: 10) {
+                // Camera
+                Button {
+                    viewModel.showCamera = true
+                } label: {
+                    Image(systemName: "camera")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.dcBlue)
+                }
+
                 // Photo picker
                 PhotosPicker(
                     selection: $viewModel.selectedPhoto,
@@ -343,6 +358,40 @@ struct FeedView: View {
 
 extension String: @retroactive Identifiable {
     public var id: String { self }
+}
+
+// MARK: - Camera (UIImagePickerController wrapper)
+
+struct CameraView: UIViewControllerRepresentable {
+    @Environment(\.dismiss) private var dismiss
+    var onCapture: (UIImage) -> Void
+
+    func makeUIViewController(context: Context) -> UIImagePickerController {
+        let picker = UIImagePickerController()
+        picker.sourceType = .camera
+        picker.delegate = context.coordinator
+        return picker
+    }
+
+    func updateUIViewController(_ uiViewController: UIImagePickerController, context: Context) {}
+
+    func makeCoordinator() -> Coordinator { Coordinator(self) }
+
+    class Coordinator: NSObject, UIImagePickerControllerDelegate, UINavigationControllerDelegate {
+        let parent: CameraView
+        init(_ parent: CameraView) { self.parent = parent }
+
+        func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
+            if let image = info[.originalImage] as? UIImage {
+                parent.onCapture(image)
+            }
+            parent.dismiss()
+        }
+
+        func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            parent.dismiss()
+        }
+    }
 }
 
 #Preview {

@@ -16,9 +16,10 @@ class FeedViewModel {
     var editingItemId: String?
     var editText = ""
 
-    // Photo picker
+    // Photo picker / camera
     var selectedPhoto: PhotosPickerItem?
     var isUploadingImage = false
+    var showCamera = false
 
     // MARK: - Init
 
@@ -122,6 +123,20 @@ class FeedViewModel {
         do {
             guard let data = try await photoItem.loadTransferable(type: Data.self) else { return }
             let filename = "photo_\(Int(Date().timeIntervalSince1970)).jpg"
+            let newItem = try await api.uploadImage(imageData: data, date: todayISO(), filename: filename)
+            items.append(newItem)
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
+    func uploadCameraImage(_ image: UIImage) async {
+        isUploadingImage = true
+        defer { isUploadingImage = false }
+
+        guard let data = image.jpegData(compressionQuality: 0.8) else { return }
+        let filename = "camera_\(Int(Date().timeIntervalSince1970)).jpg"
+        do {
             let newItem = try await api.uploadImage(imageData: data, date: todayISO(), filename: filename)
             items.append(newItem)
         } catch {
