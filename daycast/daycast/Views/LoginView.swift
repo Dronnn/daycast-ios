@@ -34,18 +34,6 @@ struct LoginView: View {
                         .font(.title.bold())
                 }
 
-                // Error
-                if let error {
-                    Text(error)
-                        .font(.subheadline)
-                        .foregroundStyle(.red)
-                        .padding(.horizontal, 16)
-                        .padding(.vertical, 10)
-                        .frame(maxWidth: .infinity)
-                        .background(Color.red.opacity(0.1))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-
                 // Form
                 VStack(spacing: 12) {
                     TextField("Username", text: $username)
@@ -74,13 +62,20 @@ struct LoginView: View {
                     Button {
                         submit(action: "login")
                     } label: {
-                        Text("Log in")
-                            .font(.body.weight(.semibold))
-                            .frame(maxWidth: .infinity)
-                            .padding(14)
-                            .background(Color.dcBlue)
-                            .foregroundStyle(.white)
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                        ZStack {
+                            if isLoading {
+                                ProgressView()
+                                    .tint(.white)
+                            } else {
+                                Text("Log in")
+                                    .font(.body.weight(.semibold))
+                            }
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(14)
+                        .background(Color.dcBlue)
+                        .foregroundStyle(.white)
+                        .clipShape(RoundedRectangle(cornerRadius: 14))
                     }
                     .disabled(isLoading || !isFormValid)
 
@@ -104,6 +99,14 @@ struct LoginView: View {
         }
         .scrollDismissesKeyboard(.interactively)
         .onTapGesture { focusedField = nil }
+        .alert("Error", isPresented: .init(
+            get: { error != nil },
+            set: { if !$0 { error = nil } }
+        )) {
+            Button("OK") { error = nil }
+        } message: {
+            Text(error ?? "")
+        }
     }
 
     private var isFormValid: Bool {
