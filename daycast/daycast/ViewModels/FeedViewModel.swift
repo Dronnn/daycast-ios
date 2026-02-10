@@ -35,6 +35,7 @@ class FeedViewModel {
         isLoading = true
         errorMessage = nil
         items = await repo.fetchItems(date: todayISO())
+        NotificationManager.shared.updateTodayNotification(itemCount: items.count)
         isLoading = false
     }
 
