@@ -50,6 +50,7 @@ class FeedViewModel {
         isSending = true
         let newItem = await repo.createItem(type: type, content: trimmed, date: todayISO())
         items.append(newItem)
+        NotificationManager.shared.updateTodayNotification(itemCount: items.count)
         inputText = ""
         isSending = false
     }
@@ -89,6 +90,7 @@ class FeedViewModel {
     func clearDay() async {
         await repo.clearDay(date: todayISO())
         items.removeAll()
+        NotificationManager.shared.updateTodayNotification(itemCount: 0)
     }
 
     // MARK: - Image Upload
@@ -102,6 +104,7 @@ class FeedViewModel {
             let filename = "photo_\(Int(Date().timeIntervalSince1970)).jpg"
             let newItem = try await repo.uploadImage(imageData: data, date: todayISO(), filename: filename)
             items.append(newItem)
+            NotificationManager.shared.updateTodayNotification(itemCount: items.count)
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -116,6 +119,7 @@ class FeedViewModel {
         do {
             let newItem = try await repo.uploadImage(imageData: data, date: todayISO(), filename: filename)
             items.append(newItem)
+            NotificationManager.shared.updateTodayNotification(itemCount: items.count)
         } catch {
             errorMessage = error.localizedDescription
         }

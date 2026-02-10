@@ -7,7 +7,7 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 ### Tabs
 
 - **History** — browse past days with search. Tap into a day to see all inputs (with cleared/edited badges) and all generations. Copy any result. View edit history per item.
-- **Channels** — configure which channels are active. Set default style, language, and output length per channel. Auto-saves on every change (debounced). Supports 5 channels: Blog, Diary, Telegram Personal, Telegram Public, Twitter/X.
+- **Channels** — configure which channels are active. Set default style, language, and output length per channel. Auto-saves on every change (debounced). Supports 5 channels: Blog, Diary, Telegram Personal, Telegram Public, Twitter/X. Access Reminders settings from the `⋯` menu.
 - **Feed** — chat-like input stream (center tab, default). Add text, paste links, take photos from camera or pick from gallery. Composer bar has dedicated camera and gallery buttons. Edit and delete items. "Clear day" soft-deletes all items. Tap image to fullscreen with pinch-to-zoom and swipe-down-to-dismiss.
 - **Generate** — trigger AI generation for all active channels. View results as cards with Copy, Share, and Publish. Regenerate per-channel or all. Switch between multiple generations per day.
 - **Blog** — public feed of published posts. Channel filter pills, infinite scroll with cursor pagination, pull-to-refresh, shimmer loading skeletons. Tap a post card to view full detail with share/copy.
@@ -25,6 +25,13 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 - **App Groups** — token shared between main app and extension via `group.ch.origin.daycast` (entitlements on both targets).
 - **Auto-refresh** — feed automatically refreshes when returning to the app after sharing (via `scenePhase` observer).
 
+### Reminders (Push Notifications)
+
+- **Evening reminders** — local push notifications: "You added N items today. Ready to generate?"
+- **Per-day schedule** — enable/disable each day of the week (Mon–Sun) with individual time pickers. Default: all days at 20:00.
+- **Auto-update** — notification body updates with the actual item count whenever you add or clear items in Feed.
+- **Settings** — accessible from Channels tab `⋯` menu → Reminders. Master toggle requests notification permission on first enable.
+
 ### Auth
 
 - **Login / Register** — username + password authentication. JWT stored in UserDefaults (App Groups). Shows login screen when no token.
@@ -41,9 +48,9 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 
 MVVM with 4 layers:
 
-- **Views** — SwiftUI views (`BlogView`, `BlogPostDetailView`, `GenerateView`, `FeedView`, `ChannelsView`, `HistoryView`, `HistoryDetailView`, `LoginView`)
+- **Views** — SwiftUI views (`BlogView`, `BlogPostDetailView`, `GenerateView`, `FeedView`, `ChannelsView`, `RemindersSettingsView`, `HistoryView`, `HistoryDetailView`, `LoginView`)
 - **ViewModels** — `@Observable` classes (`BlogViewModel`, `FeedViewModel`, `GenerateViewModel`, `ChannelsViewModel`, `HistoryViewModel`, `HistoryDetailViewModel`)
-- **Services** — `APIService` singleton (URLSession async/await, JWT auth + public endpoints)
+- **Services** — `APIService` singleton (URLSession async/await, JWT auth + public endpoints), `NotificationManager` singleton (local push notifications scheduling via UNUserNotificationCenter)
 - **Models** — Codable DTOs matching the backend API (`InputItem`, `Generation`, `GenerationResult`, `ChannelSetting`, `PublishedPostResponse`, `PublicPostListResponse`, etc.)
 - **Shared** — `SharedTokenStorage` (App Group UserDefaults), `ShareExtensionAPI` (lightweight API client for extension)
 - **DayCastShare** — Share Extension target (`ShareExtensionView`, `ShareViewController`)

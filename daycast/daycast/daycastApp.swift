@@ -34,6 +34,7 @@ struct daycastApp: App {
             ContentView()
                 .onAppear {
                     SyncService.shared.startObservingConnectivity()
+                    NotificationManager.shared.rescheduleAll()
                 }
         }
         .modelContainer(modelContainer)

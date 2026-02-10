@@ -5,6 +5,7 @@ struct ChannelsView: View {
     @Binding var isAuthenticated: Bool
     @State private var viewModel = ChannelsViewModel()
     @State private var showLogoutConfirmation = false
+    @State private var showReminders = false
 
     var body: some View {
         NavigationStack {
@@ -38,6 +39,12 @@ struct ChannelsView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
+                    Button {
+                        showReminders = true
+                    } label: {
+                        Label("Reminders", systemImage: "bell")
+                    }
+
                     Button(role: .destructive) {
                         showLogoutConfirmation = true
                     } label: {
@@ -58,6 +65,9 @@ struct ChannelsView: View {
                 APIService.shared.clearAuth()
                 isAuthenticated = false
             }
+        }
+        .sheet(isPresented: $showReminders) {
+            RemindersSettingsView()
         }
         } // NavigationStack
     }
