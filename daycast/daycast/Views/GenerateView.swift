@@ -362,87 +362,93 @@ struct GenerateView: View {
                 .padding(.bottom, 20)
 
             // Card footer
-            HStack(spacing: 10) {
-                // Copy button
-                Button {
-                    vm.copyText(result.text, resultId: result.id)
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: vm.copiedResultId == result.id ? "checkmark" : "doc.on.doc")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text(vm.copiedResultId == result.id ? "Copied" : "Copy")
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 8)
-                    .background(Color.dcBlue)
-                    .clipShape(Capsule())
-                }
-
-                // Regenerate button
-                Button {
-                    Task { await vm.regenerateChannel(result.channelId) }
-                } label: {
-                    HStack(spacing: 5) {
-                        Image(systemName: "arrow.clockwise")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text("Regenerate")
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 18)
-                    .padding(.vertical, 8)
-                    .background(Color(.tertiarySystemFill))
-                    .clipShape(Capsule())
-                }
-
-                // Publish / Unpublish
-                if let postId = vm.publishStatus[result.id] as? String {
-                    // Published state
-                    HStack(spacing: 5) {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 11, weight: .semibold))
-                        Text("Published")
-                            .font(.system(size: 12, weight: .semibold))
-                    }
-                    .foregroundStyle(Color.dcGreen)
-                    .padding(.horizontal, 14)
-                    .padding(.vertical, 6)
-                    .background(Color.dcGreen.opacity(0.1))
-                    .clipShape(Capsule())
-
+            VStack(alignment: .leading, spacing: 8) {
+                HStack(spacing: 8) {
+                    // Copy button
                     Button {
-                        Task { await vm.unpublishPost(resultId: result.id) }
+                        vm.copyText(result.text, resultId: result.id)
                     } label: {
-                        Text("Unpublish")
-                            .font(.system(size: 12, weight: .semibold))
-                            .foregroundStyle(.secondary)
-                            .padding(.horizontal, 14)
-                            .padding(.vertical, 8)
-                            .background(Color(.tertiarySystemFill))
-                            .clipShape(Capsule())
-                    }
-                } else {
-                    Button {
-                        Task { await vm.publishPost(resultId: result.id) }
-                    } label: {
-                        HStack(spacing: 5) {
-                            Image(systemName: "arrow.up.circle.fill")
+                        HStack(spacing: 4) {
+                            Image(systemName: vm.copiedResultId == result.id ? "checkmark" : "doc.on.doc")
                                 .font(.system(size: 11, weight: .semibold))
-                            Text("Publish")
+                            Text(vm.copiedResultId == result.id ? "Copied" : "Copy")
                                 .font(.system(size: 12, weight: .semibold))
                         }
                         .foregroundStyle(.white)
-                        .padding(.horizontal, 18)
+                        .padding(.horizontal, 14)
                         .padding(.vertical, 8)
-                        .background(Color.dcGreen)
+                        .background(Color.dcBlue)
                         .clipShape(Capsule())
+                        .fixedSize()
                     }
-                    .disabled(vm.isPublishing)
+
+                    // Regenerate button
+                    Button {
+                        Task { await vm.regenerateChannel(result.channelId) }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "arrow.clockwise")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Regenerate")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal, 14)
+                        .padding(.vertical, 8)
+                        .background(Color(.tertiarySystemFill))
+                        .clipShape(Capsule())
+                        .fixedSize()
+                    }
                 }
 
-                Spacer()
+                HStack(spacing: 8) {
+                    // Publish / Unpublish
+                    if let postId = vm.publishStatus[result.id] as? String {
+                        HStack(spacing: 4) {
+                            Image(systemName: "checkmark")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Published")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(Color.dcGreen)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.dcGreen.opacity(0.1))
+                        .clipShape(Capsule())
+                        .fixedSize()
+
+                        Button {
+                            Task { await vm.unpublishPost(resultId: result.id) }
+                        } label: {
+                            Text("Unpublish")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 8)
+                                .background(Color(.tertiarySystemFill))
+                                .clipShape(Capsule())
+                                .fixedSize()
+                        }
+                    } else {
+                        Button {
+                            Task { await vm.publishPost(resultId: result.id) }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrow.up.circle.fill")
+                                    .font(.system(size: 11, weight: .semibold))
+                                Text("Publish")
+                                    .font(.system(size: 12, weight: .semibold))
+                            }
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color.dcGreen)
+                            .clipShape(Capsule())
+                            .fixedSize()
+                        }
+                        .disabled(vm.isPublishing)
+                    }
+                }
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 20)
