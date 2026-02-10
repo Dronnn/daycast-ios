@@ -8,6 +8,7 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 - **Generate** — trigger AI generation for all active channels. View results as cards with Copy and Share. Regenerate per-channel or all. Switch between multiple generations per day.
 - **Channels** — configure which channels are active. Set default style, language, and output length per channel.
 - **History** — browse past days with search. Tap into a day to see all inputs (with cleared/edited badges) and all generations. Copy any result.
+- **Login / Register** — username + password authentication. JWT stored in UserDefaults. Shows login screen without token. Logout button in toolbar.
 
 ## Tech Stack
 
@@ -24,9 +25,11 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 
 ## API
 
-The app communicates with the DayCast backend API at `http://192.168.31.131/api/v1/`. All requests include a fixed `X-Client-ID` header.
+The app communicates with the DayCast backend API at `http://192.168.31.131:8000/api/v1/`. Authentication via JWT — token stored in UserDefaults and sent as `Authorization: Bearer` header.
 
 Key endpoints:
+- `POST /api/v1/auth/register` — register new user
+- `POST /api/v1/auth/login` — login existing user
 - `GET/POST/PUT/DELETE /api/v1/inputs` — manage input items
 - `POST /api/v1/generate` — trigger AI content generation
 - `GET /api/v1/days` — browse history
