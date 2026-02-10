@@ -5,6 +5,7 @@ enum APIServiceError: LocalizedError {
     case serverError(String)
     case decodingError(Error)
     case networkError(Error)
+    case unauthorized
 
     var errorDescription: String? {
         switch self {
@@ -12,15 +13,28 @@ enum APIServiceError: LocalizedError {
         case .serverError(let msg): msg
         case .decodingError(let err): "Decoding error: \(err.localizedDescription)"
         case .networkError(let err): err.localizedDescription
+        case .unauthorized: "Session expired"
         }
     }
+}
+
+struct AuthRequest: Codable, Sendable {
+    let username: String
+    let password: String
+}
+
+struct AuthResponse: Codable, Sendable {
+    let token: String
+    let username: String
 }
 
 struct APIService: Sendable {
     static let shared = APIService()
 
     let baseURL = "http://192.168.31.131:8000/api/v1"
-    let clientId = "00000000-0000-4000-a000-000000000001"
+
+    private static let tokenKey = "daycast_token"
+    private static let usernameKey = "daycast_username"
 
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
@@ -31,6 +45,57 @@ struct APIService: Sendable {
         let e = JSONEncoder()
         return e
     }()
+
+    // MARK: - Token Management
+
+    func getToken() -> String? {
+        UserDefaults.standard.string(forKey: Self.tokenKey)
+    }
+
+    func saveToken(_ token: String) {
+        UserDefaults.standard.set(token, forKey: Self.tokenKey)
+    }
+
+    func saveUsername(_ username: String) {
+        UserDefaults.standard.set(username, forKey: Self.usernameKey)
+    }
+
+    func getUsername() -> String? {
+        UserDefaults.standard.string(forKey: Self.usernameKey)
+    }
+
+    func clearAuth() {
+        UserDefaults.standard.removeObject(forKey: Self.tokenKey)
+        UserDefaults.standard.removeObject(forKey: Self.usernameKey)
+    }
+
+    var isAuthenticated: Bool {
+        getToken() != nil
+    }
+
+    // MARK: - Auth Endpoints
+
+    func auth(action: String, username: String, password: String) async throws -> AuthResponse {
+        guard let url = URL(string: "\(baseURL)/auth/\(action)") else {
+            throw APIServiceError.invalidURL
+        }
+
+        var req = URLRequest(url: url)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try encoder.encode(AuthRequest(username: username, password: password))
+
+        let (data, response) = try await URLSession.shared.data(for: req)
+
+        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
+            if let apiErr = try? decoder.decode(APIError.self, from: data) {
+                throw APIServiceError.serverError(apiErr.error)
+            }
+            throw APIServiceError.serverError("HTTP \(http.statusCode)")
+        }
+
+        return try decoder.decode(AuthResponse.self, from: data)
+    }
 
     // MARK: - Generic request
 
@@ -45,8 +110,11 @@ struct APIService: Sendable {
 
         var req = URLRequest(url: url)
         req.httpMethod = method
-        req.setValue(clientId, forHTTPHeaderField: "X-Client-ID")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let token = getToken() {
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         if let body {
             req.httpBody = try encoder.encode(body)
@@ -54,11 +122,16 @@ struct APIService: Sendable {
 
         let (data, response) = try await URLSession.shared.data(for: req)
 
-        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            if let apiErr = try? decoder.decode(APIError.self, from: data) {
-                throw APIServiceError.serverError(apiErr.error)
+        if let http = response as? HTTPURLResponse {
+            if http.statusCode == 401 {
+                throw APIServiceError.unauthorized
             }
-            throw APIServiceError.serverError("HTTP \(http.statusCode)")
+            if !(200..<300).contains(http.statusCode) {
+                if let apiErr = try? decoder.decode(APIError.self, from: data) {
+                    throw APIServiceError.serverError(apiErr.error)
+                }
+                throw APIServiceError.serverError("HTTP \(http.statusCode)")
+            }
         }
 
         if data.isEmpty, let empty = EmptyResponse() as? T {
@@ -83,8 +156,11 @@ struct APIService: Sendable {
 
         var req = URLRequest(url: url)
         req.httpMethod = method
-        req.setValue(clientId, forHTTPHeaderField: "X-Client-ID")
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+
+        if let token = getToken() {
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         if let body {
             req.httpBody = try encoder.encode(body)
@@ -92,11 +168,16 @@ struct APIService: Sendable {
 
         let (data, response) = try await URLSession.shared.data(for: req)
 
-        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            if let apiErr = try? decoder.decode(APIError.self, from: data) {
-                throw APIServiceError.serverError(apiErr.error)
+        if let http = response as? HTTPURLResponse {
+            if http.statusCode == 401 {
+                throw APIServiceError.unauthorized
             }
-            throw APIServiceError.serverError("HTTP \(http.statusCode)")
+            if !(200..<300).contains(http.statusCode) {
+                if let apiErr = try? decoder.decode(APIError.self, from: data) {
+                    throw APIServiceError.serverError(apiErr.error)
+                }
+                throw APIServiceError.serverError("HTTP \(http.statusCode)")
+            }
         }
     }
 
@@ -132,8 +213,11 @@ struct APIService: Sendable {
         let boundary = UUID().uuidString
         var req = URLRequest(url: url)
         req.httpMethod = "POST"
-        req.setValue(clientId, forHTTPHeaderField: "X-Client-ID")
         req.setValue("multipart/form-data; boundary=\(boundary)", forHTTPHeaderField: "Content-Type")
+
+        if let token = getToken() {
+            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
 
         var body = Data()
         // File part
@@ -154,11 +238,16 @@ struct APIService: Sendable {
 
         let (data, response) = try await URLSession.shared.data(for: req)
 
-        if let http = response as? HTTPURLResponse, !(200..<300).contains(http.statusCode) {
-            if let apiErr = try? decoder.decode(APIError.self, from: data) {
-                throw APIServiceError.serverError(apiErr.error)
+        if let http = response as? HTTPURLResponse {
+            if http.statusCode == 401 {
+                throw APIServiceError.unauthorized
             }
-            throw APIServiceError.serverError("HTTP \(http.statusCode)")
+            if !(200..<300).contains(http.statusCode) {
+                if let apiErr = try? decoder.decode(APIError.self, from: data) {
+                    throw APIServiceError.serverError(apiErr.error)
+                }
+                throw APIServiceError.serverError("HTTP \(http.statusCode)")
+            }
         }
 
         return try decoder.decode(InputItem.self, from: data)
