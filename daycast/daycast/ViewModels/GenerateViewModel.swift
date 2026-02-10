@@ -14,6 +14,8 @@ class GenerateViewModel {
     var publishStatus: [String: String?] = [:]
     var isPublishing: Bool = false
 
+    private let repo = DataRepository.shared
+
     var currentGeneration: Generation? {
         guard !generations.isEmpty, currentGenIndex >= 0, currentGenIndex < generations.count else {
             return nil
@@ -46,17 +48,13 @@ class GenerateViewModel {
     func fetchDay() async {
         isLoading = true
         error = nil
-        do {
-            let response = try await APIService.shared.fetchDay(date: todayISO())
-            items = response.inputItems
-            generations = response.generations
-            if !generations.isEmpty {
-                currentGenIndex = generations.count - 1
-            }
-            await loadPublishStatus()
-        } catch {
-            self.error = error.localizedDescription
+        let response = await repo.fetchDay(date: todayISO())
+        items = response.inputItems
+        generations = response.generations
+        if !generations.isEmpty {
+            currentGenIndex = generations.count - 1
         }
+        await loadPublishStatus()
         isLoading = false
     }
 
@@ -64,10 +62,12 @@ class GenerateViewModel {
         isGenerating = true
         error = nil
         do {
-            let generation = try await APIService.shared.generate(date: todayISO())
+            let generation = try await repo.generate(date: todayISO())
             generations.append(generation)
             currentGenIndex = generations.count - 1
             await loadPublishStatus()
+        } catch let offlineError as OfflineError {
+            self.error = offlineError.localizedDescription
         } catch {
             self.error = error.localizedDescription
         }
@@ -79,10 +79,12 @@ class GenerateViewModel {
         isGenerating = true
         error = nil
         do {
-            let generation = try await APIService.shared.regenerate(generationId: current.id)
+            let generation = try await repo.regenerate(generationId: current.id, date: todayISO())
             generations.append(generation)
             currentGenIndex = generations.count - 1
             await loadPublishStatus()
+        } catch let offlineError as OfflineError {
+            self.error = offlineError.localizedDescription
         } catch {
             self.error = error.localizedDescription
         }
@@ -93,13 +95,16 @@ class GenerateViewModel {
         guard let current = currentGeneration else { return }
         error = nil
         do {
-            let generation = try await APIService.shared.regenerate(
+            let generation = try await repo.regenerate(
                 generationId: current.id,
-                channels: [channelId]
+                channels: [channelId],
+                date: todayISO()
             )
             generations.append(generation)
             currentGenIndex = generations.count - 1
             await loadPublishStatus()
+        } catch let offlineError as OfflineError {
+            self.error = offlineError.localizedDescription
         } catch {
             self.error = error.localizedDescription
         }
@@ -110,18 +115,20 @@ class GenerateViewModel {
         let ids = gen.results.map { $0.id }
         guard !ids.isEmpty else { return }
         do {
-            let response = try await APIService.shared.getPublishStatus(resultIds: ids)
+            let response = try await repo.getPublishStatus(resultIds: ids)
             publishStatus = response.statuses
         } catch {
-            // silently fail
+            // silently fail (offline or network error)
         }
     }
 
     func publishPost(resultId: String) async {
         isPublishing = true
         do {
-            let post = try await APIService.shared.publishPost(resultId: resultId)
+            let post = try await repo.publishPost(resultId: resultId)
             publishStatus[resultId] = post.id
+        } catch let offlineError as OfflineError {
+            self.error = offlineError.localizedDescription
         } catch {
             self.error = error.localizedDescription
         }
@@ -132,8 +139,10 @@ class GenerateViewModel {
         guard let postId = publishStatus[resultId] as? String else { return }
         isPublishing = true
         do {
-            try await APIService.shared.unpublishPost(postId: postId)
+            try await repo.unpublishPost(postId: postId)
             publishStatus[resultId] = nil
+        } catch let offlineError as OfflineError {
+            self.error = offlineError.localizedDescription
         } catch {
             self.error = error.localizedDescription
         }

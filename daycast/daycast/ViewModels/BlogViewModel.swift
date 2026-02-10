@@ -19,7 +19,7 @@ class BlogViewModel {
 
     // MARK: - Init
 
-    private let api = APIService.shared
+    private let repo = DataRepository.shared
 
     init() {
         Task { await fetchPosts() }
@@ -33,7 +33,7 @@ class BlogViewModel {
         cursor = nil
         hasMore = true
         do {
-            let response = try await api.fetchPublicPosts(channel: selectedChannel)
+            let response = try await repo.fetchPublicPosts(channel: selectedChannel)
             posts = response.items
             cursor = response.cursor
             hasMore = response.hasMore
@@ -49,7 +49,7 @@ class BlogViewModel {
         guard !isLoadingMore, hasMore, let cursor else { return }
         isLoadingMore = true
         do {
-            let response = try await api.fetchPublicPosts(cursor: cursor, channel: selectedChannel)
+            let response = try await repo.fetchPublicPosts(cursor: cursor, channel: selectedChannel)
             posts.append(contentsOf: response.items)
             self.cursor = response.cursor
             hasMore = response.hasMore

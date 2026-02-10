@@ -23,7 +23,7 @@ class FeedViewModel {
 
     // MARK: - Init
 
-    private let api = APIService.shared
+    private let repo = DataRepository.shared
 
     init() {
         Task { await fetchItems() }
@@ -34,11 +34,7 @@ class FeedViewModel {
     func fetchItems() async {
         isLoading = true
         errorMessage = nil
-        do {
-            items = try await api.fetchItems(date: todayISO())
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        items = await repo.fetchItems(date: todayISO())
         isLoading = false
     }
 
@@ -51,28 +47,18 @@ class FeedViewModel {
         let type: InputItemType = trimmed.hasPrefix("http://") || trimmed.hasPrefix("https://")
             ? .url : .text
 
-        let request = InputItemCreateRequest(type: type, content: trimmed, date: todayISO())
-
         isSending = true
-        do {
-            let newItem = try await api.createItem(request)
-            items.append(newItem)
-            inputText = ""
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        let newItem = await repo.createItem(type: type, content: trimmed, date: todayISO())
+        items.append(newItem)
+        inputText = ""
         isSending = false
     }
 
     // MARK: - Delete
 
     func deleteItem(_ item: InputItem) async {
-        do {
-            try await api.deleteItem(id: item.id)
-            items.removeAll { $0.id == item.id }
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        await repo.deleteItem(id: item.id)
+        items.removeAll { $0.id == item.id }
     }
 
     // MARK: - Edit
@@ -92,26 +78,17 @@ class FeedViewModel {
         let trimmed = editText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
 
-        do {
-            let updated = try await api.updateItem(id: id, content: trimmed)
-            if let index = items.firstIndex(where: { $0.id == id }) {
-                items[index] = updated
-            }
-            cancelEditing()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        await repo.updateItem(id: id, content: trimmed)
+        // Refresh items to reflect the update
+        items = await repo.fetchItems(date: todayISO())
+        cancelEditing()
     }
 
     // MARK: - Clear Day
 
     func clearDay() async {
-        do {
-            try await api.clearDay(date: todayISO())
-            items.removeAll()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        await repo.clearDay(date: todayISO())
+        items.removeAll()
     }
 
     // MARK: - Image Upload
@@ -123,7 +100,7 @@ class FeedViewModel {
         do {
             guard let data = try await photoItem.loadTransferable(type: Data.self) else { return }
             let filename = "photo_\(Int(Date().timeIntervalSince1970)).jpg"
-            let newItem = try await api.uploadImage(imageData: data, date: todayISO(), filename: filename)
+            let newItem = try await repo.uploadImage(imageData: data, date: todayISO(), filename: filename)
             items.append(newItem)
         } catch {
             errorMessage = error.localizedDescription
@@ -137,7 +114,7 @@ class FeedViewModel {
         guard let data = image.jpegData(compressionQuality: 0.8) else { return }
         let filename = "camera_\(Int(Date().timeIntervalSince1970)).jpg"
         do {
-            let newItem = try await api.uploadImage(imageData: data, date: todayISO(), filename: filename)
+            let newItem = try await repo.uploadImage(imageData: data, date: todayISO(), filename: filename)
             items.append(newItem)
         } catch {
             errorMessage = error.localizedDescription

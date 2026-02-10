@@ -3,6 +3,7 @@ import SwiftUI
 struct ContentView: View {
     @State private var isAuthenticated = APIService.shared.isAuthenticated
     @State private var selectedTab = "feed"
+    private var network = NetworkMonitor.shared
 
     var body: some View {
         if isAuthenticated {
@@ -35,6 +36,21 @@ struct ContentView: View {
                     }
                 }
             }
+            .overlay(alignment: .top) {
+                if !network.isConnected {
+                    HStack(spacing: 8) {
+                        Image(systemName: "wifi.slash")
+                        Text("Offline — showing cached data")
+                    }
+                    .font(.system(size: 13, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 8)
+                    .background(Color(.systemGray))
+                    .transition(.move(edge: .top).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: network.isConnected)
         } else {
             LoginView(isAuthenticated: $isAuthenticated)
         }

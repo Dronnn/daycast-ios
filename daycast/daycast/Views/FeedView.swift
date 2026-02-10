@@ -5,6 +5,7 @@ import UIKit
 struct FeedView: View {
     @State private var viewModel = FeedViewModel()
     @State private var showClearConfirmation = false
+    @State private var fullscreenImage: UIImage?
     @FocusState private var isComposerFocused: Bool
 
     var body: some View {
@@ -61,34 +62,49 @@ struct FeedView: View {
                 }
                 .ignoresSafeArea()
             }
+            .fullScreenCover(item: $fullscreenImage) { image in
+                FullscreenImageView(image: image) {
+                    fullscreenImage = nil
+                }
+            }
         }
     }
 
     // MARK: - Feed Scroll View
 
     private var feedScrollView: some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                if viewModel.isLoading && viewModel.items.isEmpty {
-                    ProgressView()
-                        .padding(.top, 40)
-                } else if viewModel.items.isEmpty && !viewModel.isLoading {
-                    emptyState
-                } else {
-                    ForEach(viewModel.items) { item in
-                        itemRow(item)
+        ScrollViewReader { proxy in
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    if viewModel.isLoading && viewModel.items.isEmpty {
+                        ProgressView()
+                            .padding(.top, 40)
+                    } else if viewModel.items.isEmpty && !viewModel.isLoading {
+                        emptyState
+                    } else {
+                        ForEach(viewModel.items) { item in
+                            itemRow(item)
+                        }
                     }
+                    Color.clear.frame(height: 1).id("bottom")
+                }
+                .padding(.horizontal, 16)
+                .padding(.top, 12)
+                .padding(.bottom, 8)
+            }
+            .scrollDismissesKeyboard(.interactively)
+            .onTapGesture { isComposerFocused = false }
+            .refreshable {
+                await viewModel.fetchItems()
+            }
+            .onChange(of: viewModel.items.count) {
+                withAnimation {
+                    proxy.scrollTo("bottom")
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.top, 12)
-            .padding(.bottom, 8)
-        }
-        .defaultScrollAnchor(.bottom)
-        .scrollDismissesKeyboard(.interactively)
-        .onTapGesture { isComposerFocused = false }
-        .refreshable {
-            await viewModel.fetchItems()
+            .onAppear {
+                proxy.scrollTo("bottom", anchor: .bottom)
+            }
         }
     }
 
@@ -217,41 +233,11 @@ struct FeedView: View {
     // MARK: - Image Bubble
 
     private func imageBubble(_ item: InputItem) -> some View {
-        Group {
-            if let url = APIService.shared.imageURL(path: item.content) {
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .scaledToFit()
-                    case .failure:
-                        imagePlaceholder(systemName: "exclamationmark.triangle", text: "Failed to load")
-                    case .empty:
-                        ProgressView()
-                            .frame(width: 200, height: 150)
-                    @unknown default:
-                        EmptyView()
-                    }
-                }
-            } else {
-                imagePlaceholder(systemName: "photo", text: "Image")
-            }
+        AuthenticatedImageView(path: item.content) { uiImage in
+            fullscreenImage = uiImage
         }
         .frame(maxWidth: 240)
         .clipShape(RoundedRectangle(cornerRadius: 16))
-    }
-
-    private func imagePlaceholder(systemName: String, text: String) -> some View {
-        VStack(spacing: 8) {
-            Image(systemName: systemName)
-                .font(.title2)
-            Text(text)
-                .font(.caption)
-        }
-        .foregroundStyle(.secondary)
-        .frame(width: 200, height: 150)
-        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 16))
     }
 
     // MARK: - Composer Bar
@@ -259,7 +245,7 @@ struct FeedView: View {
     private var composerBar: some View {
         VStack(spacing: 0) {
             Divider()
-            HStack(spacing: 10) {
+            HStack(alignment: .bottom, spacing: 8) {
                 // Camera
                 Button {
                     viewModel.showCamera = true
@@ -267,6 +253,7 @@ struct FeedView: View {
                     Image(systemName: "camera")
                         .font(.system(size: 20))
                         .foregroundStyle(Color.dcBlue)
+                        .frame(height: 36)
                 }
 
                 // Photo picker
@@ -278,6 +265,7 @@ struct FeedView: View {
                     Image(systemName: "photo.on.rectangle.angled")
                         .font(.system(size: 20))
                         .foregroundStyle(Color.dcBlue)
+                        .frame(height: 36)
                 }
                 .onChange(of: viewModel.selectedPhoto) { _, newValue in
                     if let newValue {
@@ -295,7 +283,7 @@ struct FeedView: View {
                     .focused($isComposerFocused)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
-                    .background(Color(.tertiarySystemFill), in: Capsule())
+                    .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 20))
                     .submitLabel(.send)
                     .onSubmit {
                         Task { await viewModel.sendItem() }
@@ -308,6 +296,7 @@ struct FeedView: View {
                     Image(systemName: "arrow.up.circle.fill")
                         .font(.system(size: 30))
                         .foregroundStyle(sendButtonDisabled ? Color(.tertiaryLabel) : Color.dcBlue)
+                        .frame(height: 36)
                 }
                 .disabled(sendButtonDisabled)
             }
@@ -392,6 +381,111 @@ struct CameraView: UIViewControllerRepresentable {
             parent.dismiss()
         }
     }
+}
+
+// MARK: - Authenticated Image View
+
+struct AuthenticatedImageView: View {
+    let path: String
+    var onTap: ((UIImage) -> Void)?
+
+    @State private var uiImage: UIImage?
+    @State private var failed = false
+
+    var body: some View {
+        Group {
+            if let uiImage {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFit()
+                    .onTapGesture { onTap?(uiImage) }
+            } else if failed {
+                imagePlaceholder(systemName: "exclamationmark.triangle", text: "Failed to load")
+            } else {
+                ProgressView()
+                    .frame(width: 200, height: 150)
+            }
+        }
+        .task { await loadImage() }
+    }
+
+    private func loadImage() async {
+        guard let url = APIService.shared.imageURL(path: path) else {
+            failed = true
+            return
+        }
+        var request = URLRequest(url: url)
+        if let token = APIService.shared.getToken() {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            if let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+               let image = UIImage(data: data) {
+                uiImage = image
+            } else {
+                failed = true
+            }
+        } catch {
+            failed = true
+        }
+    }
+
+    private func imagePlaceholder(systemName: String, text: String) -> some View {
+        VStack(spacing: 8) {
+            Image(systemName: systemName)
+                .font(.title2)
+            Text(text)
+                .font(.caption)
+        }
+        .foregroundStyle(.secondary)
+        .frame(width: 200, height: 150)
+        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 16))
+    }
+}
+
+// MARK: - Fullscreen Image View
+
+struct FullscreenImageView: View {
+    let image: UIImage
+    let onDismiss: () -> Void
+
+    @State private var scale: CGFloat = 1.0
+
+    var body: some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black.ignoresSafeArea()
+
+            Image(uiImage: image)
+                .resizable()
+                .scaledToFit()
+                .scaleEffect(scale)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .gesture(
+                    MagnifyGesture()
+                        .onChanged { value in scale = value.magnification }
+                        .onEnded { _ in withAnimation { scale = max(1.0, scale) } }
+                )
+                .onTapGesture(count: 2) {
+                    withAnimation { scale = scale > 1 ? 1.0 : 2.0 }
+                }
+
+            Button {
+                onDismiss()
+            } label: {
+                Image(systemName: "xmark.circle.fill")
+                    .font(.title)
+                    .foregroundStyle(.white.opacity(0.8))
+                    .padding()
+            }
+        }
+    }
+}
+
+// MARK: - UIImage Identifiable for .fullScreenCover(item:)
+
+extension UIImage: @retroactive Identifiable {
+    public var id: ObjectIdentifier { ObjectIdentifier(self) }
 }
 
 #Preview {

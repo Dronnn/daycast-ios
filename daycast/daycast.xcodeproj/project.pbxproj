@@ -6,6 +6,10 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		18F9E2D92F3B797E0081B20A /* DayCastShare.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 18F9E2CF2F3B797E0081B20A /* DayCastShare.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+/* End PBXBuildFile section */
+
 /* Begin PBXContainerItemProxy section */
 		18F9E1132F3AFB3A0081B20A /* PBXContainerItemProxy */ = {
 			isa = PBXContainerItemProxy;
@@ -21,17 +25,60 @@
 			remoteGlobalIDString = 18F9E1022F3AFB390081B20A;
 			remoteInfo = daycast;
 		};
+		18F9E2D72F3B797E0081B20A /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 18F9E0FB2F3AFB390081B20A /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 18F9E2CE2F3B797E0081B20A;
+			remoteInfo = DayCastShare;
+		};
 /* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		18F9E2DE2F3B797E0081B20A /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				18F9E2D92F3B797E0081B20A /* DayCastShare.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		18F9E1032F3AFB390081B20A /* daycast.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = daycast.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		18F9E1122F3AFB3A0081B20A /* daycastTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = daycastTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		18F9E11C2F3AFB3A0081B20A /* daycastUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = daycastUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		18F9E2CF2F3B797E0081B20A /* DayCastShare.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = DayCastShare.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		18F9E2DA2F3B797E0081B20A /* Exceptions for "DayCastShare" folder in "DayCastShare" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 18F9E2CE2F3B797E0081B20A /* DayCastShare */;
+		};
+		18F9E2EE2F3B7A9C0081B20A /* Exceptions for "daycast" folder in "DayCastShare" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Shared/SharedTokenStorage.swift,
+				Shared/ShareExtensionAPI.swift,
+			);
+			target = 18F9E2CE2F3B797E0081B20A /* DayCastShare */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		18F9E1052F3AFB390081B20A /* daycast */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				18F9E2EE2F3B7A9C0081B20A /* Exceptions for "daycast" folder in "DayCastShare" target */,
+			);
 			path = daycast;
 			sourceTree = "<group>";
 		};
@@ -43,6 +90,14 @@
 		18F9E11F2F3AFB3A0081B20A /* daycastUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = daycastUITests;
+			sourceTree = "<group>";
+		};
+		18F9E2D02F3B797E0081B20A /* DayCastShare */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				18F9E2DA2F3B797E0081B20A /* Exceptions for "DayCastShare" folder in "DayCastShare" target */,
+			);
+			path = DayCastShare;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -69,6 +124,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		18F9E2CC2F3B797E0081B20A /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -78,6 +140,7 @@
 				18F9E1052F3AFB390081B20A /* daycast */,
 				18F9E1152F3AFB3A0081B20A /* daycastTests */,
 				18F9E11F2F3AFB3A0081B20A /* daycastUITests */,
+				18F9E2D02F3B797E0081B20A /* DayCastShare */,
 				18F9E1042F3AFB390081B20A /* Products */,
 			);
 			sourceTree = "<group>";
@@ -88,6 +151,7 @@
 				18F9E1032F3AFB390081B20A /* daycast.app */,
 				18F9E1122F3AFB3A0081B20A /* daycastTests.xctest */,
 				18F9E11C2F3AFB3A0081B20A /* daycastUITests.xctest */,
+				18F9E2CF2F3B797E0081B20A /* DayCastShare.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -102,10 +166,12 @@
 				18F9E0FF2F3AFB390081B20A /* Sources */,
 				18F9E1002F3AFB390081B20A /* Frameworks */,
 				18F9E1012F3AFB390081B20A /* Resources */,
+				18F9E2DE2F3B797E0081B20A /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				18F9E2D82F3B797E0081B20A /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				18F9E1052F3AFB390081B20A /* daycast */,
@@ -163,6 +229,28 @@
 			productReference = 18F9E11C2F3AFB3A0081B20A /* daycastUITests.xctest */;
 			productType = "com.apple.product-type.bundle.ui-testing";
 		};
+		18F9E2CE2F3B797E0081B20A /* DayCastShare */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 18F9E2DB2F3B797E0081B20A /* Build configuration list for PBXNativeTarget "DayCastShare" */;
+			buildPhases = (
+				18F9E2CB2F3B797E0081B20A /* Sources */,
+				18F9E2CC2F3B797E0081B20A /* Frameworks */,
+				18F9E2CD2F3B797E0081B20A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				18F9E2D02F3B797E0081B20A /* DayCastShare */,
+			);
+			name = DayCastShare;
+			packageProductDependencies = (
+			);
+			productName = DayCastShare;
+			productReference = 18F9E2CF2F3B797E0081B20A /* DayCastShare.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -184,6 +272,9 @@
 						CreatedOnToolsVersion = 26.2;
 						TestTargetID = 18F9E1022F3AFB390081B20A;
 					};
+					18F9E2CE2F3B797E0081B20A = {
+						CreatedOnToolsVersion = 26.2;
+					};
 				};
 			};
 			buildConfigurationList = 18F9E0FE2F3AFB390081B20A /* Build configuration list for PBXProject "daycast" */;
@@ -203,6 +294,7 @@
 				18F9E1022F3AFB390081B20A /* daycast */,
 				18F9E1112F3AFB3A0081B20A /* daycastTests */,
 				18F9E11B2F3AFB3A0081B20A /* daycastUITests */,
+				18F9E2CE2F3B797E0081B20A /* DayCastShare */,
 			);
 		};
 /* End PBXProject section */
@@ -223,6 +315,13 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		18F9E11A2F3AFB3A0081B20A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		18F9E2CD2F3B797E0081B20A /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -253,6 +352,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		18F9E2CB2F3B797E0081B20A /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -265,6 +371,11 @@
 			isa = PBXTargetDependency;
 			target = 18F9E1022F3AFB390081B20A /* daycast */;
 			targetProxy = 18F9E11D2F3AFB3A0081B20A /* PBXContainerItemProxy */;
+		};
+		18F9E2D82F3B797E0081B20A /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 18F9E2CE2F3B797E0081B20A /* DayCastShare */;
+			targetProxy = 18F9E2D72F3B797E0081B20A /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -540,6 +651,62 @@
 			};
 			name = Release;
 		};
+		18F9E2DC2F3B797E0081B20A /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 52JK39H2V3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DayCastShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DayCastShare;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ch.origin.daycast.DayCastShare;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		18F9E2DD2F3B797E0081B20A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 52JK39H2V3;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = DayCastShare/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = DayCastShare;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ch.origin.daycast.DayCastShare;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -575,6 +742,15 @@
 			buildConfigurations = (
 				18F9E12D2F3AFB3A0081B20A /* Debug */,
 				18F9E12E2F3AFB3A0081B20A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		18F9E2DB2F3B797E0081B20A /* Build configuration list for PBXNativeTarget "DayCastShare" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				18F9E2DC2F3B797E0081B20A /* Debug */,
+				18F9E2DD2F3B797E0081B20A /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

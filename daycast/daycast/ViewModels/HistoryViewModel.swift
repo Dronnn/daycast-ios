@@ -10,7 +10,7 @@ class HistoryViewModel {
     var isLoading = false
     var errorMessage: String?
 
-    private let api = APIService.shared
+    private let repo = DataRepository.shared
     private var searchTask: Task<Void, Never>?
 
     /// Groups days by month/year label for section headers.
@@ -33,13 +33,8 @@ class HistoryViewModel {
     func fetchDays() async {
         isLoading = true
         errorMessage = nil
-        do {
-            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-            let response = try await api.fetchDays(search: query.isEmpty ? nil : query)
-            days = response.items
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        days = await repo.fetchDays(search: query.isEmpty ? nil : query)
         isLoading = false
     }
 
@@ -67,7 +62,7 @@ class HistoryDetailViewModel {
     var publishStatus: [String: String?] = [:]
     var isPublishing: Bool = false
 
-    private let api = APIService.shared
+    private let repo = DataRepository.shared
 
     init(date: String) {
         self.date = date
@@ -77,12 +72,8 @@ class HistoryDetailViewModel {
     func fetchDay() async {
         isLoading = true
         errorMessage = nil
-        do {
-            day = try await api.fetchDay(date: date)
-            await loadPublishStatus()
-        } catch {
-            errorMessage = error.localizedDescription
-        }
+        day = await repo.fetchDay(date: date)
+        await loadPublishStatus()
         isLoading = false
     }
 
@@ -110,7 +101,7 @@ class HistoryDetailViewModel {
         let ids = generations.flatMap { $0.results.map { $0.id } }
         guard !ids.isEmpty else { return }
         do {
-            let response = try await api.getPublishStatus(resultIds: ids)
+            let response = try await repo.getPublishStatus(resultIds: ids)
             publishStatus = response.statuses
         } catch {
             // silently fail
@@ -120,7 +111,7 @@ class HistoryDetailViewModel {
     func publishPost(resultId: String) async {
         isPublishing = true
         do {
-            let post = try await api.publishPost(resultId: resultId)
+            let post = try await repo.publishPost(resultId: resultId)
             publishStatus[resultId] = post.id
         } catch {
             errorMessage = error.localizedDescription
@@ -132,7 +123,7 @@ class HistoryDetailViewModel {
         guard let postId = publishStatus[resultId] as? String else { return }
         isPublishing = true
         do {
-            try await api.unpublishPost(postId: postId)
+            try await repo.unpublishPost(postId: postId)
             publishStatus[resultId] = nil
         } catch {
             errorMessage = error.localizedDescription

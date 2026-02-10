@@ -12,30 +12,25 @@ class ChannelsViewModel {
 
     // MARK: - Private
 
-    private let api = APIService.shared
+    private let repo = DataRepository.shared
 
     // MARK: - Load
 
     func loadSettings() async {
         isLoading = true
         errorMessage = nil
-        do {
-            let fetched = try await api.fetchChannelSettings()
-            if fetched.isEmpty {
-                buildDefaults()
-            } else {
-                settings = [:]
-                for setting in fetched {
-                    settings[setting.channelId] = setting
-                }
-                // Fill in any missing channels with defaults
-                for channel in ChannelMeta.all where settings[channel.id] == nil {
-                    settings[channel.id] = defaultSetting(for: channel.id)
-                }
-            }
-        } catch {
-            errorMessage = error.localizedDescription
+        let fetched = await repo.fetchChannelSettings()
+        if fetched.isEmpty {
             buildDefaults()
+        } else {
+            settings = [:]
+            for setting in fetched {
+                settings[setting.channelId] = setting
+            }
+            // Fill in any missing channels with defaults
+            for channel in ChannelMeta.all where settings[channel.id] == nil {
+                settings[channel.id] = defaultSetting(for: channel.id)
+            }
         }
         isLoading = false
     }
@@ -48,15 +43,11 @@ class ChannelsViewModel {
             try? await Task.sleep(for: .milliseconds(500))
             guard !Task.isCancelled else { return }
             errorMessage = nil
-            do {
-                let allSettings = ChannelMeta.all.compactMap { settings[$0.id] }
-                try await api.saveChannelSettings(allSettings)
-                showSaved = true
-                try? await Task.sleep(for: .seconds(1.5))
-                showSaved = false
-            } catch {
-                errorMessage = error.localizedDescription
-            }
+            let allSettings = ChannelMeta.all.compactMap { settings[$0.id] }
+            await repo.saveChannelSettings(allSettings)
+            showSaved = true
+            try? await Task.sleep(for: .seconds(1.5))
+            showSaved = false
         }
     }
 

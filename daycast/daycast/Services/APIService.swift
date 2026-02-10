@@ -33,9 +33,6 @@ struct APIService: Sendable {
 
     let baseURL = "http://192.168.31.131:8000/api/v1"
 
-    private static let tokenKey = "daycast_token"
-    private static let usernameKey = "daycast_username"
-
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
         return d
@@ -49,28 +46,27 @@ struct APIService: Sendable {
     // MARK: - Token Management
 
     func getToken() -> String? {
-        UserDefaults.standard.string(forKey: Self.tokenKey)
+        SharedTokenStorage.getToken()
     }
 
     func saveToken(_ token: String) {
-        UserDefaults.standard.set(token, forKey: Self.tokenKey)
+        SharedTokenStorage.saveToken(token)
     }
 
     func saveUsername(_ username: String) {
-        UserDefaults.standard.set(username, forKey: Self.usernameKey)
+        SharedTokenStorage.saveUsername(username)
     }
 
     func getUsername() -> String? {
-        UserDefaults.standard.string(forKey: Self.usernameKey)
+        SharedTokenStorage.getUsername()
     }
 
     func clearAuth() {
-        UserDefaults.standard.removeObject(forKey: Self.tokenKey)
-        UserDefaults.standard.removeObject(forKey: Self.usernameKey)
+        SharedTokenStorage.clearAuth()
     }
 
     var isAuthenticated: Bool {
-        getToken() != nil
+        SharedTokenStorage.isAuthenticated
     }
 
     // MARK: - Auth Endpoints
