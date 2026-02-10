@@ -19,7 +19,7 @@ enum APIServiceError: LocalizedError {
 struct APIService: Sendable {
     static let shared = APIService()
 
-    let baseURL = "http://192.168.31.131/api/v1"
+    let baseURL = "http://192.168.31.131:8000/api/v1"
     let clientId = "00000000-0000-4000-a000-000000000001"
 
     private let decoder: JSONDecoder = {
