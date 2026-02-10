@@ -64,6 +64,8 @@ class HistoryDetailViewModel {
     var errorMessage: String?
     var copiedResultId: String?
     var expandedEditItemIds: Set<String> = []
+    var publishStatus: [String: String?] = [:]
+    var isPublishing: Bool = false
 
     private let api = APIService.shared
 
@@ -77,6 +79,7 @@ class HistoryDetailViewModel {
         errorMessage = nil
         do {
             day = try await api.fetchDay(date: date)
+            await loadPublishStatus()
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -101,6 +104,40 @@ class HistoryDetailViewModel {
 
     func isEditHistoryExpanded(for itemId: String) -> Bool {
         expandedEditItemIds.contains(itemId)
+    }
+
+    func loadPublishStatus() async {
+        let ids = generations.flatMap { $0.results.map { $0.id } }
+        guard !ids.isEmpty else { return }
+        do {
+            let response = try await api.getPublishStatus(resultIds: ids)
+            publishStatus = response.statuses
+        } catch {
+            // silently fail
+        }
+    }
+
+    func publishPost(resultId: String) async {
+        isPublishing = true
+        do {
+            let post = try await api.publishPost(resultId: resultId)
+            publishStatus[resultId] = post.id
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isPublishing = false
+    }
+
+    func unpublishPost(resultId: String) async {
+        guard let postId = publishStatus[resultId] as? String else { return }
+        isPublishing = true
+        do {
+            try await api.unpublishPost(postId: postId)
+            publishStatus[resultId] = nil
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+        isPublishing = false
     }
 
     func copyText(_ text: String, resultId: String) {

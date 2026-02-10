@@ -285,6 +285,21 @@ struct APIService: Sendable {
         try await requestVoid("DELETE", path: "/days/\(date)")
     }
 
+    // MARK: - Publishing
+
+    func publishPost(resultId: String) async throws -> PublishedPostResponse {
+        try await request("POST", path: "/publish", body: PublishRequest(generationResultId: resultId))
+    }
+
+    func unpublishPost(postId: String) async throws {
+        try await requestVoid("DELETE", path: "/publish/\(postId)")
+    }
+
+    func getPublishStatus(resultIds: [String]) async throws -> PublishStatusResponse {
+        let ids = resultIds.joined(separator: ",")
+        return try await request("GET", path: "/publish/status?result_ids=\(ids)")
+    }
+
     // MARK: - Channel Settings
 
     func fetchChannelSettings() async throws -> [ChannelSetting] {

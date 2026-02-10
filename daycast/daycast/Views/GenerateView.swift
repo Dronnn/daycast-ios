@@ -397,6 +397,51 @@ struct GenerateView: View {
                     .clipShape(Capsule())
                 }
 
+                // Publish / Unpublish
+                if let postId = vm.publishStatus[result.id] as? String {
+                    // Published state
+                    HStack(spacing: 5) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 11, weight: .semibold))
+                        Text("Published")
+                            .font(.system(size: 12, weight: .semibold))
+                    }
+                    .foregroundStyle(Color.dcGreen)
+                    .padding(.horizontal, 14)
+                    .padding(.vertical, 6)
+                    .background(Color.dcGreen.opacity(0.1))
+                    .clipShape(Capsule())
+
+                    Button {
+                        Task { await vm.unpublishPost(resultId: result.id) }
+                    } label: {
+                        Text("Unpublish")
+                            .font(.system(size: 12, weight: .semibold))
+                            .foregroundStyle(.secondary)
+                            .padding(.horizontal, 14)
+                            .padding(.vertical, 8)
+                            .background(Color(.tertiarySystemFill))
+                            .clipShape(Capsule())
+                    }
+                } else {
+                    Button {
+                        Task { await vm.publishPost(resultId: result.id) }
+                    } label: {
+                        HStack(spacing: 5) {
+                            Image(systemName: "arrow.up.circle.fill")
+                                .font(.system(size: 11, weight: .semibold))
+                            Text("Publish")
+                                .font(.system(size: 12, weight: .semibold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 18)
+                        .padding(.vertical, 8)
+                        .background(Color.dcGreen)
+                        .clipShape(Capsule())
+                    }
+                    .disabled(vm.isPublishing)
+                }
+
                 Spacer()
             }
             .padding(.horizontal, 24)

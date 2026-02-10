@@ -96,6 +96,39 @@ struct Generation: Codable, Identifiable, Sendable {
     }
 }
 
+// MARK: - Publishing
+
+struct PublishRequest: Codable, Sendable {
+    let generationResultId: String
+
+    enum CodingKeys: String, CodingKey {
+        case generationResultId = "generation_result_id"
+    }
+}
+
+struct PublishedPostResponse: Codable, Identifiable, Sendable {
+    let id: String
+    let slug: String
+    let channelId: String
+    let style: String
+    let language: String
+    let text: String
+    let date: String
+    let publishedAt: String
+    let inputItemsPreview: [String]
+
+    enum CodingKeys: String, CodingKey {
+        case id, slug, style, language, text, date
+        case channelId = "channel_id"
+        case publishedAt = "published_at"
+        case inputItemsPreview = "input_items_preview"
+    }
+}
+
+struct PublishStatusResponse: Codable, Sendable {
+    let statuses: [String: String?]
+}
+
 // MARK: - Days / History
 
 struct DayResponse: Codable, Sendable {

@@ -352,6 +352,48 @@ private struct GenerationResultCard: View {
                 .font(.footnote)
                 .lineLimit(8)
                 .foregroundStyle(.primary)
+
+            // Publish controls
+            HStack(spacing: 8) {
+                if let postId = viewModel.publishStatus[result.id] as? String {
+                    HStack(spacing: 4) {
+                        Image(systemName: "checkmark")
+                            .font(.system(size: 10, weight: .semibold))
+                        Text("Published")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                    }
+                    .foregroundStyle(Color.dcGreen)
+                    .padding(.horizontal, 8)
+                    .padding(.vertical, 3)
+                    .background(Color.dcGreen.opacity(0.1))
+                    .clipShape(Capsule())
+
+                    Button {
+                        Task { await viewModel.unpublishPost(resultId: result.id) }
+                    } label: {
+                        Text("Unpublish")
+                            .font(.caption2)
+                            .fontWeight(.medium)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                } else {
+                    Button {
+                        Task { await viewModel.publishPost(resultId: result.id) }
+                    } label: {
+                        Label("Publish", systemImage: "arrow.up.circle.fill")
+                            .font(.caption)
+                            .fontWeight(.medium)
+                            .foregroundStyle(Color.dcGreen)
+                    }
+                    .buttonStyle(.plain)
+                    .disabled(viewModel.isPublishing)
+                }
+
+                Spacer()
+            }
+            .padding(.top, 4)
         }
         .padding(12)
         .background(Color(.secondarySystemGroupedBackground))

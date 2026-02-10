@@ -11,6 +11,8 @@ class GenerateViewModel {
     var showSource: Bool = false
     var error: String?
     var copiedResultId: String?
+    var publishStatus: [String: String?] = [:]
+    var isPublishing: Bool = false
 
     var currentGeneration: Generation? {
         guard !generations.isEmpty, currentGenIndex >= 0, currentGenIndex < generations.count else {
@@ -51,6 +53,7 @@ class GenerateViewModel {
             if !generations.isEmpty {
                 currentGenIndex = generations.count - 1
             }
+            await loadPublishStatus()
         } catch {
             self.error = error.localizedDescription
         }
@@ -64,6 +67,7 @@ class GenerateViewModel {
             let generation = try await APIService.shared.generate(date: todayISO())
             generations.append(generation)
             currentGenIndex = generations.count - 1
+            await loadPublishStatus()
         } catch {
             self.error = error.localizedDescription
         }
@@ -78,6 +82,7 @@ class GenerateViewModel {
             let generation = try await APIService.shared.regenerate(generationId: current.id)
             generations.append(generation)
             currentGenIndex = generations.count - 1
+            await loadPublishStatus()
         } catch {
             self.error = error.localizedDescription
         }
@@ -94,9 +99,45 @@ class GenerateViewModel {
             )
             generations.append(generation)
             currentGenIndex = generations.count - 1
+            await loadPublishStatus()
         } catch {
             self.error = error.localizedDescription
         }
+    }
+
+    func loadPublishStatus() async {
+        guard let gen = currentGeneration else { return }
+        let ids = gen.results.map { $0.id }
+        guard !ids.isEmpty else { return }
+        do {
+            let response = try await APIService.shared.getPublishStatus(resultIds: ids)
+            publishStatus = response.statuses
+        } catch {
+            // silently fail
+        }
+    }
+
+    func publishPost(resultId: String) async {
+        isPublishing = true
+        do {
+            let post = try await APIService.shared.publishPost(resultId: resultId)
+            publishStatus[resultId] = post.id
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isPublishing = false
+    }
+
+    func unpublishPost(resultId: String) async {
+        guard let postId = publishStatus[resultId] as? String else { return }
+        isPublishing = true
+        do {
+            try await APIService.shared.unpublishPost(postId: postId)
+            publishStatus[resultId] = nil
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isPublishing = false
     }
 
     func goToPreviousGeneration() {
