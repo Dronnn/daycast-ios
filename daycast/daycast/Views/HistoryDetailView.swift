@@ -165,17 +165,17 @@ private struct InputItemRow: View {
             HStack(spacing: 6) {
                 Image(systemName: "link")
                     .font(.caption)
-                    .foregroundStyle(.dcBlue)
+                    .foregroundStyle(Color.dcBlue)
                 Text(getDomain(item.content))
                     .font(.caption)
-                    .foregroundStyle(.dcBlue)
+                    .foregroundStyle(Color.dcBlue)
             }
 
             if let url = URL(string: item.content) {
                 Link(destination: url) {
                     Text(item.content)
                         .font(.footnote)
-                        .foregroundStyle(.dcBlue)
+                        .foregroundStyle(Color.dcBlue)
                         .lineLimit(2)
                         .truncationMode(.middle)
                 }
@@ -341,7 +341,7 @@ private struct GenerationResultCard: View {
                     )
                     .font(.caption)
                     .fontWeight(.medium)
-                    .foregroundStyle(isCopied ? .dcGreen : .dcBlue)
+                    .foregroundStyle(isCopied ? Color.dcGreen : Color.dcBlue)
                 }
                 .buttonStyle(.plain)
                 .animation(.easeInOut(duration: 0.2), value: isCopied)

@@ -1,4 +1,5 @@
 import UIKit
+import Observation
 
 @Observable
 class GenerateViewModel {
