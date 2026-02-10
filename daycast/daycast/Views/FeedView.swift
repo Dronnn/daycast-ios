@@ -5,6 +5,7 @@ import UIKit
 struct FeedView: View {
     @State private var viewModel = FeedViewModel()
     @State private var showClearConfirmation = false
+    @FocusState private var isComposerFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -78,6 +79,8 @@ struct FeedView: View {
             .padding(.bottom, 8)
         }
         .defaultScrollAnchor(.bottom)
+        .scrollDismissesKeyboard(.interactively)
+        .onTapGesture { isComposerFocused = false }
         .refreshable {
             await viewModel.fetchItems()
         }
@@ -274,9 +277,11 @@ struct FeedView: View {
                 TextField("Add a thought, link, or note...", text: $viewModel.inputText, axis: .vertical)
                     .textFieldStyle(.plain)
                     .lineLimit(1...5)
+                    .focused($isComposerFocused)
                     .padding(.horizontal, 12)
                     .padding(.vertical, 8)
                     .background(Color(.tertiarySystemFill), in: Capsule())
+                    .submitLabel(.send)
                     .onSubmit {
                         Task { await viewModel.sendItem() }
                     }

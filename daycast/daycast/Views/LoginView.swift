@@ -6,91 +6,104 @@ struct LoginView: View {
     @State private var password = ""
     @State private var error: String?
     @State private var isLoading = false
+    @FocusState private var focusedField: Field?
+
+    private enum Field { case username, password }
 
     var body: some View {
-        VStack(spacing: 32) {
-            Spacer()
+        ScrollView {
+            VStack(spacing: 32) {
+                Spacer().frame(height: 80)
 
-            // Logo
-            VStack(spacing: 12) {
-                Image(systemName: "bolt.fill")
-                    .font(.system(size: 32, weight: .bold))
-                    .foregroundStyle(.white)
-                    .frame(width: 64, height: 64)
-                    .background(
-                        LinearGradient(
-                            colors: [.dcBlue, .dcPurple],
-                            startPoint: .topLeading,
-                            endPoint: .bottomTrailing
-                        )
-                    )
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
-
-                Text("DayCast")
-                    .font(.title.bold())
-            }
-
-            // Error
-            if let error {
-                Text(error)
-                    .font(.subheadline)
-                    .foregroundStyle(.red)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .frame(maxWidth: .infinity)
-                    .background(Color.red.opacity(0.1))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-
-            // Form
-            VStack(spacing: 12) {
-                TextField("Username", text: $username)
-                    .textContentType(.username)
-                    .autocorrectionDisabled()
-                    .textInputAutocapitalization(.never)
-                    .padding(14)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-
-                SecureField("Password", text: $password)
-                    .textContentType(.password)
-                    .padding(14)
-                    .background(Color(.systemGray6))
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-
-            // Buttons
-            VStack(spacing: 10) {
-                Button {
-                    submit(action: "login")
-                } label: {
-                    Text("Log in")
-                        .font(.body.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(14)
-                        .background(Color.dcBlue)
+                // Logo
+                VStack(spacing: 12) {
+                    Image(systemName: "bolt.fill")
+                        .font(.system(size: 32, weight: .bold))
                         .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                }
-                .disabled(isLoading || !isFormValid)
+                        .frame(width: 64, height: 64)
+                        .background(
+                            LinearGradient(
+                                colors: [.dcBlue, .dcPurple],
+                                startPoint: .topLeading,
+                                endPoint: .bottomTrailing
+                            )
+                        )
+                        .clipShape(RoundedRectangle(cornerRadius: 16))
 
-                Button {
-                    submit(action: "register")
-                } label: {
-                    Text("Register")
-                        .font(.body.weight(.semibold))
+                    Text("DayCast")
+                        .font(.title.bold())
+                }
+
+                // Error
+                if let error {
+                    Text(error)
+                        .font(.subheadline)
+                        .foregroundStyle(.red)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
                         .frame(maxWidth: .infinity)
-                        .padding(14)
-                        .background(Color(.systemGray5))
-                        .foregroundStyle(.primary)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        .background(Color.red.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
-                .disabled(isLoading || !isFormValid)
-            }
 
-            Spacer()
+                // Form
+                VStack(spacing: 12) {
+                    TextField("Username", text: $username)
+                        .textContentType(.username)
+                        .autocorrectionDisabled()
+                        .textInputAutocapitalization(.never)
+                        .focused($focusedField, equals: .username)
+                        .padding(14)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .submitLabel(.next)
+                        .onSubmit { focusedField = .password }
+
+                    SecureField("Password", text: $password)
+                        .textContentType(.password)
+                        .focused($focusedField, equals: .password)
+                        .padding(14)
+                        .background(Color(.systemGray6))
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
+                        .submitLabel(.go)
+                        .onSubmit { submit(action: "login") }
+                }
+
+                // Buttons
+                VStack(spacing: 10) {
+                    Button {
+                        submit(action: "login")
+                    } label: {
+                        Text("Log in")
+                            .font(.body.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(14)
+                            .background(Color.dcBlue)
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .disabled(isLoading || !isFormValid)
+
+                    Button {
+                        submit(action: "register")
+                    } label: {
+                        Text("Register")
+                            .font(.body.weight(.semibold))
+                            .frame(maxWidth: .infinity)
+                            .padding(14)
+                            .background(Color(.systemGray5))
+                            .foregroundStyle(.primary)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                    }
+                    .disabled(isLoading || !isFormValid)
+                }
+
+                Spacer().frame(height: 40)
+            }
+            .padding(.horizontal, 32)
         }
-        .padding(.horizontal, 32)
+        .scrollDismissesKeyboard(.interactively)
+        .onTapGesture { focusedField = nil }
     }
 
     private var isFormValid: Bool {
@@ -98,6 +111,7 @@ struct LoginView: View {
     }
 
     private func submit(action: String) {
+        focusedField = nil
         error = nil
         isLoading = true
 
