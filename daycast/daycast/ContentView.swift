@@ -12,7 +12,7 @@ struct ContentView: View {
                     HistoryView()
                 }
                 Tab("Channels", systemImage: "slider.horizontal.3", value: "channels") {
-                    ChannelsView()
+                    ChannelsView(isAuthenticated: $isAuthenticated)
                 }
                 Tab("Feed", systemImage: "bubble.left.fill", value: "feed") {
                     FeedView()
@@ -25,17 +25,6 @@ struct ContentView: View {
                 }
             }
             .tint(.blue)
-            .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button {
-                        APIService.shared.clearAuth()
-                        isAuthenticated = false
-                    } label: {
-                        Image(systemName: "rectangle.portrait.and.arrow.right")
-                            .foregroundStyle(.secondary)
-                    }
-                }
-            }
             .overlay(alignment: .top) {
                 if !network.isConnected {
                     HStack(spacing: 8) {

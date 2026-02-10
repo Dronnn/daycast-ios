@@ -20,7 +20,8 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 
 ### Auth
 
-- **Login / Register** — username + password authentication. JWT stored in UserDefaults. Shows login screen when no token. Logout button in toolbar.
+- **Login / Register** — username + password authentication. JWT stored in UserDefaults (App Groups). Shows login screen when no token.
+- **Logout** — available in Channels tab via the `⋯` menu (top-right). Confirmation dialog before clearing auth.
 
 ## Tech Stack
 

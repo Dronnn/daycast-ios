@@ -2,23 +2,13 @@ import SwiftUI
 
 struct ChannelsView: View {
 
+    @Binding var isAuthenticated: Bool
     @State private var viewModel = ChannelsViewModel()
+    @State private var showLogoutConfirmation = false
 
     var body: some View {
+        NavigationStack {
         Form {
-            // Header
-            Section {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Channels")
-                        .font(.largeTitle.bold())
-                    Text("Configure which channels to generate and their default settings.")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                }
-                .listRowBackground(Color.clear)
-                .listRowInsets(EdgeInsets(top: 16, leading: 0, bottom: 8, trailing: 0))
-            }
-
             // Channel sections
             ForEach(ChannelMeta.all) { channel in
                 channelSection(channel)
@@ -43,6 +33,33 @@ struct ChannelsView: View {
         .task {
             await viewModel.loadSettings()
         }
+        .navigationTitle("Channels")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Menu {
+                    Button(role: .destructive) {
+                        showLogoutConfirmation = true
+                    } label: {
+                        Label("Log Out", systemImage: "rectangle.portrait.and.arrow.right")
+                    }
+                } label: {
+                    Image(systemName: "ellipsis.circle")
+                        .fontWeight(.medium)
+                }
+            }
+        }
+        .confirmationDialog(
+            "Are you sure you want to log out?",
+            isPresented: $showLogoutConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Log Out", role: .destructive) {
+                APIService.shared.clearAuth()
+                isAuthenticated = false
+            }
+        }
+        } // NavigationStack
     }
 
     // MARK: - Channel Section
@@ -164,7 +181,5 @@ struct ChannelsView: View {
 }
 
 #Preview {
-    NavigationStack {
-        ChannelsView()
-    }
+    ChannelsView(isAuthenticated: .constant(true))
 }
