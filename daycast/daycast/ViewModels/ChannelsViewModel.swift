@@ -6,7 +6,6 @@ class ChannelsViewModel {
     // MARK: - State
 
     var settings: [String: ChannelSetting] = [:]
-    var isSaving = false
     var showSaved = false
     var isLoading = false
     var errorMessage: String?
@@ -43,20 +42,25 @@ class ChannelsViewModel {
 
     // MARK: - Save
 
-    func saveSettings() async {
-        isSaving = true
-        errorMessage = nil
-        do {
-            let allSettings = ChannelMeta.all.compactMap { settings[$0.id] }
-            try await api.saveChannelSettings(allSettings)
-            showSaved = true
-            try? await Task.sleep(for: .seconds(2))
-            showSaved = false
-        } catch {
-            errorMessage = error.localizedDescription
+    private func autoSave() {
+        saveTask?.cancel()
+        saveTask = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            errorMessage = nil
+            do {
+                let allSettings = ChannelMeta.all.compactMap { settings[$0.id] }
+                try await api.saveChannelSettings(allSettings)
+                showSaved = true
+                try? await Task.sleep(for: .seconds(1.5))
+                showSaved = false
+            } catch {
+                errorMessage = error.localizedDescription
+            }
         }
-        isSaving = false
     }
+
+    private var saveTask: Task<Void, Never>?
 
     // MARK: - Update
 
@@ -64,6 +68,7 @@ class ChannelsViewModel {
         guard var setting = settings[channelId] else { return }
         transform(&setting)
         settings[channelId] = setting
+        autoSave()
     }
 
     // MARK: - Helpers

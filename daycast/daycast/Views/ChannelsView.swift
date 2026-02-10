@@ -24,32 +24,6 @@ struct ChannelsView: View {
                 channelSection(channel)
             }
 
-            // Save
-            Section {
-                Button {
-                    Task { await viewModel.saveSettings() }
-                } label: {
-                    HStack {
-                        Spacer()
-                        if viewModel.isSaving {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Text("Save Settings")
-                                .fontWeight(.semibold)
-                        }
-                        Spacer()
-                    }
-                    .padding(.vertical, 4)
-                }
-                .listRowBackground(
-                    RoundedRectangle(cornerRadius: 10)
-                        .fill(Color.dcBlue)
-                )
-                .foregroundStyle(.white)
-                .disabled(viewModel.isSaving)
-            }
-
             // Error
             if let error = viewModel.errorMessage {
                 Section {
