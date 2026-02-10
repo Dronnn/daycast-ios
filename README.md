@@ -8,7 +8,7 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 
 - **History** — browse past days with search. Tap into a day to see all inputs (with cleared/edited badges) and all generations. Copy any result. View edit history per item.
 - **Channels** — configure which channels are active. Set default style, language, and output length per channel. Auto-saves on every change (debounced). Supports 5 channels: Blog, Diary, Telegram Personal, Telegram Public, Twitter/X.
-- **Feed** — chat-like input stream (center tab, default). Add text, paste links, take photos from camera or gallery. Edit and delete items. "Clear day" soft-deletes all items.
+- **Feed** — chat-like input stream (center tab, default). Add text, paste links, take photos from camera or pick from gallery. Composer bar has dedicated camera and gallery buttons. Edit and delete items. "Clear day" soft-deletes all items.
 - **Generate** — trigger AI generation for all active channels. View results as cards with Copy, Share, and Publish. Regenerate per-channel or all. Switch between multiple generations per day.
 - **Blog** — public feed of published posts. Channel filter pills, infinite scroll with cursor pagination, pull-to-refresh, shimmer loading skeletons. Tap a post card to view full detail with share/copy.
 
