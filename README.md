@@ -4,36 +4,55 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 
 ## Features
 
+### Tabs
+
 - **Feed** — chat-like input stream. Add text, paste links, take photos from camera or gallery. Edit and delete items. "Clear day" soft-deletes all items.
-- **Generate** — trigger AI generation for all active channels. View results as cards with Copy and Share. Regenerate per-channel or all. Switch between multiple generations per day.
-- **Channels** — configure which channels are active. Set default style, language, and output length per channel.
-- **History** — browse past days with search. Tap into a day to see all inputs (with cleared/edited badges) and all generations. Copy any result.
-- **Login / Register** — username + password authentication. JWT stored in UserDefaults. Shows login screen without token. Logout button in toolbar.
+- **Generate** — trigger AI generation for all active channels. View results as cards with Copy, Share, and Publish. Regenerate per-channel or all. Switch between multiple generations per day.
+- **Channels** — configure which channels are active. Set default style, language, and output length per channel. Supports 5 channels: Blog, Diary, Telegram Personal, Telegram Public, Twitter/X.
+- **History** — browse past days with search. Tap into a day to see all inputs (with cleared/edited badges) and all generations. Copy any result. View edit history per item.
+
+### Publishing
+
+- **Publish / Unpublish** — publish any generated result to the public DayCast Blog site. Available on result cards in Generate and History Detail views.
+- **Publish status** — batch status check shows which results are already published.
+- Published posts appear on the public site at `http://192.168.31.131:3000`.
+
+### Auth
+
+- **Login / Register** — username + password authentication. JWT stored in UserDefaults. Shows login screen when no token. Logout button in toolbar.
 
 ## Tech Stack
 
-- **SwiftUI** (iOS 26+)
+- **SwiftUI** (iOS 18+)
 - **Swift Concurrency** (async/await)
 - **No external dependencies** — pure Apple frameworks
 
 ## Architecture
 
-- **Views** — SwiftUI views for each screen
-- **ViewModels** — `@Observable` classes with business logic
-- **Services** — API client (URLSession async/await)
-- **Models** — Codable DTOs matching the backend API
+MVVM with 4 layers:
+
+- **Views** — SwiftUI views (`FeedView`, `GenerateView`, `ChannelsView`, `HistoryView`, `HistoryDetailView`, `LoginView`)
+- **ViewModels** — `@Observable` classes (`FeedViewModel`, `GenerateViewModel`, `ChannelsViewModel`, `HistoryViewModel`, `HistoryDetailViewModel`)
+- **Services** — `APIService` singleton (URLSession async/await, JWT auth)
+- **Models** — Codable DTOs matching the backend API (`InputItem`, `Generation`, `GenerationResult`, `ChannelSetting`, `PublishedPostResponse`, etc.)
+
+Shared UI components in `Theme.swift`: color tokens, `ChannelIconView` (gradient letter badges), date formatters.
 
 ## API
 
-The app communicates with the DayCast backend API at `http://192.168.31.131:8000/api/v1/`. Authentication via JWT — token stored in UserDefaults and sent as `Authorization: Bearer` header.
+Backend: `http://192.168.31.131:8000/api/v1/`. Auth via JWT Bearer token.
 
-Key endpoints:
-- `POST /api/v1/auth/register` — register new user
-- `POST /api/v1/auth/login` — login existing user
-- `GET/POST/PUT/DELETE /api/v1/inputs` — manage input items
-- `POST /api/v1/generate` — trigger AI content generation
-- `GET /api/v1/days` — browse history
-- `GET/POST /api/v1/settings/channels` — channel configuration
+Endpoints used:
+- `POST /auth/register`, `POST /auth/login` — authentication
+- `GET/POST/PUT/DELETE /inputs` — input items CRUD
+- `POST /inputs/upload` — image upload (multipart)
+- `POST /generate` — trigger AI generation
+- `POST /generate/{id}/regenerate` — regenerate channels
+- `GET /days`, `GET /days/{date}`, `DELETE /days/{date}` — history
+- `GET/POST /settings/channels` — channel config
+- `POST /publish` — publish a generation result
+- `DELETE /publish/{id}` — unpublish
+- `GET /publish/status?result_ids=...` — batch publish status check
 
 ## Setup
 
@@ -41,7 +60,7 @@ Key endpoints:
 2. Select your target device or simulator
 3. Build and run (Cmd+R)
 
-The API server must be running on `192.168.31.131` (or update the base URL in `Services/APIService.swift`).
+The API server must be running on `192.168.31.131` (or update `baseURL` in `Services/APIService.swift`).
 
 ## License
 
