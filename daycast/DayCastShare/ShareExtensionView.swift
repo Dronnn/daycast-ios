@@ -243,11 +243,15 @@ struct ShareExtensionView: View {
         guard let content = extractedContent else { return }
         state = .sending
 
+        let source = sourceNote(type: content.type)
+
         do {
             if content.type == .image, let imageData = content.imageData {
                 _ = try await ShareAPIClient.uploadImage(imageData: imageData)
+                _ = try? await ShareAPIClient.createItem(type: .text, content: source)
             } else {
-                _ = try await ShareAPIClient.createItem(type: content.type, content: content.text)
+                let contentWithSource = content.text + "\n" + source
+                _ = try await ShareAPIClient.createItem(type: content.type, content: contentWithSource)
             }
             state = .success
             try? await Task.sleep(for: .seconds(1.5))
@@ -261,6 +265,19 @@ struct ShareExtensionView: View {
         } catch {
             state = .error(error.localizedDescription)
         }
+    }
+
+    // MARK: - Source Detection
+
+    private func sourceNote(type: ShareInputType) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm"
+        let label: String = switch type {
+        case .url: "link"
+        case .text: "text"
+        case .image: "photo"
+        }
+        return "— last \(label) shared at \(formatter.string(from: Date()))"
     }
 
     private func close() {

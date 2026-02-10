@@ -8,7 +8,7 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 
 - **History** — browse past days with search. Tap into a day to see all inputs (with cleared/edited badges) and all generations. Copy any result. View edit history per item.
 - **Channels** — configure which channels are active. Set default style, language, and output length per channel. Auto-saves on every change (debounced). Supports 5 channels: Blog, Diary, Telegram Personal, Telegram Public, Twitter/X.
-- **Feed** — chat-like input stream (center tab, default). Add text, paste links, take photos from camera or pick from gallery. Composer bar has dedicated camera and gallery buttons. Edit and delete items. "Clear day" soft-deletes all items.
+- **Feed** — chat-like input stream (center tab, default). Add text, paste links, take photos from camera or pick from gallery. Composer bar has dedicated camera and gallery buttons. Edit and delete items. "Clear day" soft-deletes all items. Tap image to fullscreen with pinch-to-zoom and swipe-down-to-dismiss.
 - **Generate** — trigger AI generation for all active channels. View results as cards with Copy, Share, and Publish. Regenerate per-channel or all. Switch between multiple generations per day.
 - **Blog** — public feed of published posts. Channel filter pills, infinite scroll with cursor pagination, pull-to-refresh, shimmer loading skeletons. Tap a post card to view full detail with share/copy.
 
@@ -21,6 +21,7 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 ### Share Extension
 
 - **Share from any app** — share URLs, text, and images from Safari or any app via the iOS share sheet.
+- **Source metadata** — each shared item is tagged with type and timestamp (e.g. "— last link shared at 14:30").
 - **App Groups** — token shared between main app and extension via `group.ch.origin.daycast` (entitlements on both targets).
 - **Auto-refresh** — feed automatically refreshes when returning to the app after sharing (via `scenePhase` observer).
 

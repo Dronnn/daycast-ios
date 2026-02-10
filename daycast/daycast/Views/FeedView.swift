@@ -197,23 +197,36 @@ struct FeedView: View {
     // MARK: - URL Card
 
     private func urlCard(_ item: InputItem) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+        let url = item.content.components(separatedBy: .newlines).first ?? item.content
+        let source = item.content.contains("\n")
+            ? item.content.components(separatedBy: .newlines).dropFirst()
+                .joined(separator: " ").trimmingCharacters(in: .whitespaces)
+            : nil
+
+        return VStack(alignment: .leading, spacing: 6) {
             // Domain label
             HStack(spacing: 4) {
                 Image(systemName: "link")
                     .font(.caption2)
-                Text(getDomain(item.content))
+                Text(getDomain(url))
                     .font(.caption)
                     .fontWeight(.medium)
             }
             .foregroundStyle(.white.opacity(0.8))
 
             // URL text
-            Text(item.content)
+            Text(url)
                 .font(.caption)
                 .foregroundStyle(.white.opacity(0.7))
                 .lineLimit(1)
                 .truncationMode(.middle)
+
+            // Source metadata
+            if let source, !source.isEmpty {
+                Text(source)
+                    .font(.caption2)
+                    .foregroundStyle(.white.opacity(0.5))
+            }
 
             // Extracted text preview
             if let extracted = item.extractedText, !extracted.isEmpty {
@@ -230,8 +243,8 @@ struct FeedView: View {
         .background(Color.dcBlue, in: RoundedRectangle(cornerRadius: 16))
         .textSelection(.enabled)
         .onTapGesture {
-            if let url = URL(string: item.content) {
-                openURL(url)
+            if let parsed = URL(string: url) {
+                openURL(parsed)
             }
         }
     }
@@ -457,16 +470,36 @@ struct FullscreenImageView: View {
     let onDismiss: () -> Void
 
     @State private var scale: CGFloat = 1.0
+    @State private var dragOffset: CGSize = .zero
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            Color.black.ignoresSafeArea()
+            Color.black.opacity(1.0 - min(abs(dragOffset.height) / CGFloat(300), 0.5))
+                .ignoresSafeArea()
 
             Image(uiImage: image)
                 .resizable()
                 .scaledToFit()
                 .scaleEffect(scale)
+                .offset(y: dragOffset.height)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .gesture(
+                    DragGesture()
+                        .onChanged { value in
+                            if scale <= 1.0 {
+                                dragOffset = value.translation
+                            }
+                        }
+                        .onEnded { value in
+                            if abs(value.translation.height) > 120 {
+                                onDismiss()
+                            } else {
+                                withAnimation(.spring(duration: 0.25)) {
+                                    dragOffset = .zero
+                                }
+                            }
+                        }
+                )
                 .gesture(
                     MagnifyGesture()
                         .onChanged { value in scale = value.magnification }
