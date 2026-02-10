@@ -18,10 +18,17 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 - **Publish status** — batch status check shows which results are already published.
 - Published posts appear on the public site at `http://192.168.31.131:3000`.
 
+### Share Extension
+
+- **Share from any app** — share URLs, text, and images from Safari or any app via the iOS share sheet.
+- **App Groups** — token shared between main app and extension via `group.ch.origin.daycast` (entitlements on both targets).
+- **Auto-refresh** — feed automatically refreshes when returning to the app after sharing (via `scenePhase` observer).
+
 ### Auth
 
 - **Login / Register** — username + password authentication. JWT stored in UserDefaults (App Groups). Shows login screen when no token.
 - **Logout** — available in Channels tab via the `⋯` menu (top-right). Confirmation dialog before clearing auth.
+- **Token migration** — on first launch after update, token migrates from `UserDefaults.standard` to the App Group shared container.
 
 ## Tech Stack
 
@@ -37,6 +44,8 @@ MVVM with 4 layers:
 - **ViewModels** — `@Observable` classes (`BlogViewModel`, `FeedViewModel`, `GenerateViewModel`, `ChannelsViewModel`, `HistoryViewModel`, `HistoryDetailViewModel`)
 - **Services** — `APIService` singleton (URLSession async/await, JWT auth + public endpoints)
 - **Models** — Codable DTOs matching the backend API (`InputItem`, `Generation`, `GenerationResult`, `ChannelSetting`, `PublishedPostResponse`, `PublicPostListResponse`, etc.)
+- **Shared** — `SharedTokenStorage` (App Group UserDefaults), `ShareExtensionAPI` (lightweight API client for extension)
+- **DayCastShare** — Share Extension target (`ShareExtensionView`, `ShareViewController`)
 
 Shared UI components in `Theme.swift`: color tokens, `ChannelIconView` (gradient letter badges), `ShimmerView` (loading skeletons), date formatters.
 

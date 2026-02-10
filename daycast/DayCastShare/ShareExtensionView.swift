@@ -70,7 +70,8 @@ struct ShareExtensionView: View {
                     notAuthenticatedView
                 }
             }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 32)
         }
         .background(Color(.systemGroupedBackground))
         .task { await extractContent() }

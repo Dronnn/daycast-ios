@@ -7,6 +7,7 @@ struct FeedView: View {
     @State private var showClearConfirmation = false
     @State private var fullscreenImage: UIImage?
     @FocusState private var isComposerFocused: Bool
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
@@ -65,6 +66,11 @@ struct FeedView: View {
             .fullScreenCover(item: $fullscreenImage) { image in
                 FullscreenImageView(image: image) {
                     fullscreenImage = nil
+                }
+            }
+            .onChange(of: scenePhase) { _, newPhase in
+                if newPhase == .active {
+                    Task { await viewModel.fetchItems() }
                 }
             }
         }
