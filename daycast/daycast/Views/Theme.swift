@@ -126,3 +126,48 @@ func getDomain(_ urlString: String) -> String {
     guard let url = URL(string: urlString) else { return urlString }
     return url.host?.replacingOccurrences(of: "www.", with: "") ?? urlString
 }
+
+func formatPublishDate(_ iso: String) -> String {
+    let f = ISO8601DateFormatter()
+    f.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+    let date = f.date(from: iso) ?? {
+        f.formatOptions = [.withInternetDateTime]
+        return f.date(from: iso)
+    }()
+    guard let date else { return "" }
+    let out = DateFormatter()
+    out.dateFormat = "MMM d, yyyy"
+    out.locale = Locale(identifier: "en_US")
+    return out.string(from: date)
+}
+
+// MARK: - Shimmer Effect
+
+struct ShimmerView: View {
+    @State private var phase: CGFloat = 0
+
+    var body: some View {
+        Color(.tertiarySystemFill)
+            .overlay(
+                LinearGradient(
+                    colors: [
+                        .clear,
+                        Color.white.opacity(0.3),
+                        .clear
+                    ],
+                    startPoint: .leading,
+                    endPoint: .trailing
+                )
+                .offset(x: phase)
+            )
+            .clipped()
+            .onAppear {
+                withAnimation(
+                    .linear(duration: 1.4)
+                    .repeatForever(autoreverses: false)
+                ) {
+                    phase = 350
+                }
+            }
+    }
+}

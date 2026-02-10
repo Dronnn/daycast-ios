@@ -548,36 +548,7 @@ struct GenerateView: View {
     }
 }
 
-// MARK: - Shimmer Effect
-
-private struct ShimmerView: View {
-    @State private var phase: CGFloat = 0
-
-    var body: some View {
-        Color(.tertiarySystemFill)
-            .overlay(
-                LinearGradient(
-                    colors: [
-                        .clear,
-                        Color.white.opacity(0.3),
-                        .clear
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .offset(x: phase)
-            )
-            .clipped()
-            .onAppear {
-                withAnimation(
-                    .linear(duration: 1.4)
-                    .repeatForever(autoreverses: false)
-                ) {
-                    phase = 350
-                }
-            }
-    }
-}
+// ShimmerView moved to Theme.swift for reuse
 
 #Preview {
     GenerateView()

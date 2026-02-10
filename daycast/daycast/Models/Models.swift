@@ -106,7 +106,7 @@ struct PublishRequest: Codable, Sendable {
     }
 }
 
-struct PublishedPostResponse: Codable, Identifiable, Sendable {
+struct PublishedPostResponse: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let slug: String
     let channelId: String
@@ -210,6 +210,19 @@ struct ChannelMeta: Identifiable, Sendable {
 
     static func find(_ id: String) -> ChannelMeta {
         all.first(where: { $0.id == id }) ?? ChannelMeta(id: id, name: id, description: "", letter: String(id.prefix(1)).uppercased(), gradientColors: ["#888888", "#aaaaaa"])
+    }
+}
+
+// MARK: - Public Feed
+
+struct PublicPostListResponse: Codable, Sendable {
+    let items: [PublishedPostResponse]
+    let cursor: String?
+    let hasMore: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case items, cursor
+        case hasMore = "has_more"
     }
 }
 

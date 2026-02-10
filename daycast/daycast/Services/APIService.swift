@@ -300,6 +300,19 @@ struct APIService: Sendable {
         return try await request("GET", path: "/publish/status?result_ids=\(ids)")
     }
 
+    // MARK: - Public Feed (no auth)
+
+    func fetchPublicPosts(cursor: String? = nil, limit: Int = 10, channel: String? = nil) async throws -> PublicPostListResponse {
+        var path = "/public/posts?limit=\(limit)"
+        if let cursor { path += "&cursor=\(cursor)" }
+        if let channel { path += "&channel=\(channel)" }
+        return try await request("GET", path: path)
+    }
+
+    func fetchPublicPost(slug: String) async throws -> PublishedPostResponse {
+        try await request("GET", path: "/public/posts/\(slug)")
+    }
+
     // MARK: - Channel Settings
 
     func fetchChannelSettings() async throws -> [ChannelSetting] {
