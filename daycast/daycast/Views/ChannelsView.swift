@@ -20,13 +20,15 @@ struct ChannelsView: View {
                     TextField("E.g.: Always mention the weather...", text: $viewModel.customInstruction, axis: .vertical)
                         .lineLimit(2...5)
                         .textFieldStyle(.roundedBorder)
+                        .onChange(of: viewModel.customInstruction) {
+                            viewModel.autoSaveGenSettings()
+                        }
                 }
 
                 Toggle("Separate business & personal events", isOn: $viewModel.separateBusinessPersonal)
-
-                Button("Save Generation Settings") {
-                    Task { await viewModel.saveGenerationSettings() }
-                }
+                    .onChange(of: viewModel.separateBusinessPersonal) {
+                        viewModel.autoSaveGenSettings()
+                    }
             }
 
             // Channel sections

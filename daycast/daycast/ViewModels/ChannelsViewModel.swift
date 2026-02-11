@@ -50,18 +50,23 @@ class ChannelsViewModel {
         } catch {}
     }
 
-    func saveGenerationSettings() async {
-        do {
+    func autoSaveGenSettings() {
+        genSaveTask?.cancel()
+        genSaveTask = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
             let request = GenerationSettingsRequest(
                 customInstruction: customInstruction.isEmpty ? nil : customInstruction,
                 separateBusinessPersonal: separateBusinessPersonal
             )
-            _ = try await DataRepository.shared.saveGenerationSettings(request)
+            _ = try? await DataRepository.shared.saveGenerationSettings(request)
             showSaved = true
             try? await Task.sleep(for: .seconds(1.5))
             showSaved = false
-        } catch {}
+        }
     }
+
+    private var genSaveTask: Task<Void, Never>?
 
     // MARK: - Save
 
