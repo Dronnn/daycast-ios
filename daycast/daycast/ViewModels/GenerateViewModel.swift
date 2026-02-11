@@ -24,7 +24,7 @@ class GenerateViewModel {
     }
 
     var activeItemCount: Int {
-        items.filter { !$0.cleared }.count
+        items.filter { !$0.cleared && $0.includeInGeneration }.count
     }
 
     var hasGenerations: Bool {

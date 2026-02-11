@@ -294,7 +294,7 @@ struct GenerateView: View {
 
             if vm.showSource {
                 VStack(spacing: 8) {
-                    ForEach(vm.items.filter { !$0.cleared }) { item in
+                    ForEach(vm.items.filter { !$0.cleared && $0.includeInGeneration }) { item in
                         sourceItemRow(item)
                     }
                 }
