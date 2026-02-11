@@ -1,5 +1,50 @@
 import SwiftUI
 
+// MARK: - Diff Helpers
+
+struct DiffPart: Identifiable {
+    let id = UUID()
+    let type: DiffType
+    let text: String
+    enum DiffType { case same, added, removed }
+}
+
+func computeWordDiff(old: String, new: String) -> [DiffPart] {
+    let oldWords = old.components(separatedBy: .whitespaces)
+    let newWords = new.components(separatedBy: .whitespaces)
+    var result: [DiffPart] = []
+    var i = 0, j = 0
+    while i < oldWords.count && j < newWords.count {
+        if oldWords[i] == newWords[j] {
+            result.append(DiffPart(type: .same, text: oldWords[i]))
+            i += 1; j += 1
+        } else {
+            result.append(DiffPart(type: .removed, text: oldWords[i]))
+            result.append(DiffPart(type: .added, text: newWords[j]))
+            i += 1; j += 1
+        }
+    }
+    while i < oldWords.count { result.append(DiffPart(type: .removed, text: oldWords[i])); i += 1 }
+    while j < newWords.count { result.append(DiffPart(type: .added, text: newWords[j])); j += 1 }
+    return result
+}
+
+func buildDiffText(parts: [DiffPart]) -> Text {
+    parts.reduce(Text("")) { result, part in
+        switch part.type {
+        case .same:
+            return result + Text(part.text + " ")
+        case .removed:
+            return result + Text(part.text + " ")
+                .foregroundColor(.red)
+                .strikethrough()
+        case .added:
+            return result + Text(part.text + " ")
+                .foregroundColor(.green)
+        }
+    }
+}
+
 struct HistoryDetailView: View {
     @State private var viewModel: HistoryDetailViewModel
 
@@ -119,11 +164,26 @@ private struct InputItemRow: View {
                 imageContent
             }
 
+            // Importance stars
+            if let importance = item.importance, importance > 0 {
+                HStack(spacing: 2) {
+                    ForEach(1...5, id: \.self) { n in
+                        Image(systemName: importance >= n ? "star.fill" : "star")
+                            .font(.system(size: 10))
+                            .foregroundStyle(importance >= n ? .yellow : .gray.opacity(0.3))
+                    }
+                }
+            }
+
             // Bottom row: time + badges
             HStack(spacing: 8) {
                 Text(formatTime(item.createdAt))
                     .font(.caption2)
                     .foregroundStyle(.tertiary)
+
+                if !item.includeInGeneration {
+                    badge("Excluded", color: .secondary)
+                }
 
                 Spacer()
 
@@ -155,7 +215,6 @@ private struct InputItemRow: View {
     private var textContent: some View {
         Text(item.content)
             .font(.body)
-            .lineLimit(6)
     }
 
     // MARK: - URL Content
@@ -252,10 +311,9 @@ private struct InputItemRow: View {
                         .frame(width: 2)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(edit.oldContent)
+                        let parts = computeWordDiff(old: edit.oldContent, new: item.content)
+                        buildDiffText(parts: parts)
                             .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(3)
 
                         Text(formatTime(edit.editedAt))
                             .font(.caption2)

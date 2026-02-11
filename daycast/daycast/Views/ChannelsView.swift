@@ -6,10 +6,29 @@ struct ChannelsView: View {
     @State private var viewModel = ChannelsViewModel()
     @State private var showLogoutConfirmation = false
     @State private var showReminders = false
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         NavigationStack {
         Form {
+            // Generation Settings
+            Section("Generation Settings") {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Custom instruction for AI")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    TextField("E.g.: Always mention the weather...", text: $viewModel.customInstruction, axis: .vertical)
+                        .lineLimit(2...5)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                Toggle("Separate business & personal events", isOn: $viewModel.separateBusinessPersonal)
+
+                Button("Save Generation Settings") {
+                    Task { await viewModel.saveGenerationSettings() }
+                }
+            }
+
             // Channel sections
             ForEach(ChannelMeta.all) { channel in
                 channelSection(channel)
@@ -33,6 +52,14 @@ struct ChannelsView: View {
         .animation(.easeInOut(duration: 0.3), value: viewModel.showSaved)
         .task {
             await viewModel.loadSettings()
+        }
+        .refreshable {
+            await viewModel.loadSettings()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                Task { await viewModel.loadSettings() }
+            }
         }
         .navigationTitle("Channels")
         .navigationBarTitleDisplayMode(.inline)
@@ -116,7 +143,7 @@ struct ChannelsView: View {
                             viewModel.updateChannel(channel.id) { $0.defaultStyle = newValue }
                         }
                     ),
-                    options: StyleOption.allCases.map { ($0.rawValue, $0.rawValue.capitalized) }
+                    options: StyleOption.allCases.map { ($0.rawValue, $0.displayName) }
                 )
 
                 // Language picker

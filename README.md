@@ -7,15 +7,15 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 ### Tabs
 
 - **History** — browse past days with search. Tap into a day to see all inputs (with cleared/edited badges) and all generations. Copy any result. View edit history per item.
-- **Channels** — configure which channels are active. Set default style, language, and output length per channel. Auto-saves on every change (debounced). Supports 5 channels: Blog, Diary, Telegram Personal, Telegram Public, Twitter/X. Access Reminders settings from the `⋯` menu.
-- **Feed** — chat-like input stream (center tab, default). Add text, paste links, take photos from camera or pick from gallery. Composer bar has dedicated camera and gallery buttons. Edit and delete items. "Clear day" soft-deletes all items. Tap image to fullscreen with pinch-to-zoom and swipe-down-to-dismiss.
+- **Channels** — configure which channels are active. Set default style, language, and output length per channel. Auto-saves on every change (debounced). Supports 5 channels: Blog, Diary, Telegram Personal, Telegram Public, Twitter/X. Generation settings: custom AI instruction and separate business/personal toggle. Access Reminders settings from the `⋯` menu.
+- **Feed** — chat-like input stream (center tab, default). Add text, paste links, take photos from camera or pick from gallery. Composer bar has dedicated camera and gallery buttons. Edit and delete items. Star importance rating (1–5). AI toggle to include/exclude items from generation. Edit history viewer. Export day as text. Publish input items directly. "Clear day" soft-deletes all items. Tap image to fullscreen with pinch-to-zoom and swipe-down-to-dismiss.
 - **Generate** — trigger AI generation for all active channels. View results as cards with Copy, Share, and Publish. Regenerate per-channel or all. Switch between multiple generations per day.
 - **Blog** — public feed of published posts. Channel filter pills, infinite scroll with cursor pagination, pull-to-refresh, shimmer loading skeletons. Tap a post card to view full detail with share/copy.
 
 ### Publishing
 
-- **Publish / Unpublish** — publish any generated result to the public DayCast Blog site. Available on result cards in Generate and History Detail views.
-- **Publish status** — batch status check shows which results are already published.
+- **Publish / Unpublish** — publish any generated result or raw input item to the public DayCast Blog site. Available on result cards in Generate, Feed, and History Detail views.
+- **Publish status** — batch status check shows which results and input items are already published.
 - Published posts appear on the public site at `http://192.168.31.131:3000`.
 
 ### Share Extension
@@ -35,6 +35,7 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 ### Auth
 
 - **Login / Register** — username + password authentication. JWT stored in UserDefaults (App Groups). Shows login screen when no token.
+- **Auto-logout on session expiry** — 401 responses trigger automatic logout via `Notification.Name.sessionExpired`.
 - **Logout** — available in Channels tab via the `⋯` menu (top-right). Confirmation dialog before clearing auth.
 - **Token migration** — on first launch after update, token migrates from `UserDefaults.standard` to the App Group shared container.
 
@@ -51,7 +52,7 @@ MVVM with 4 layers:
 - **Views** — SwiftUI views (`BlogView`, `BlogPostDetailView`, `GenerateView`, `FeedView`, `ChannelsView`, `RemindersSettingsView`, `HistoryView`, `HistoryDetailView`, `LoginView`)
 - **ViewModels** — `@Observable` classes (`BlogViewModel`, `FeedViewModel`, `GenerateViewModel`, `ChannelsViewModel`, `HistoryViewModel`, `HistoryDetailViewModel`)
 - **Services** — `APIService` singleton (URLSession async/await, JWT auth + public endpoints), `NotificationManager` singleton (local push notifications scheduling via UNUserNotificationCenter)
-- **Models** — Codable DTOs matching the backend API (`InputItem`, `Generation`, `GenerationResult`, `ChannelSetting`, `PublishedPostResponse`, `PublicPostListResponse`, etc.)
+- **Models** — Codable DTOs matching the backend API (`InputItem`, `Generation`, `GenerationResult`, `ChannelSetting`, `PublishedPostResponse`, `PublicPostListResponse`, `GenerationSettingsRequest/Response`, `ExportResponse`, etc.)
 - **Shared** — `SharedTokenStorage` (App Group UserDefaults), `ShareExtensionAPI` (lightweight API client for extension)
 - **DayCastShare** — Share Extension target (`ShareExtensionView`, `ShareViewController`)
 
@@ -69,9 +70,13 @@ Endpoints used:
 - `POST /generate/{id}/regenerate` — regenerate channels
 - `GET /days`, `GET /days/{date}`, `DELETE /days/{date}` — history
 - `GET/POST /settings/channels` — channel config
+- `GET/POST /settings/generation` — generation settings (custom instruction, business/personal)
 - `POST /publish` — publish a generation result
+- `POST /publish/input` — publish an input item directly
 - `DELETE /publish/{id}` — unpublish
-- `GET /publish/status?result_ids=...` — batch publish status check
+- `GET /publish/status?result_ids=...` — batch publish status check (generation results)
+- `GET /publish/input-status?input_ids=...` — batch publish status check (input items)
+- `GET /inputs/export?date=...` — export day as text
 - `GET /public/posts` — public feed (no auth, cursor pagination, channel filter)
 - `GET /public/posts/{slug}` — single public post by slug
 

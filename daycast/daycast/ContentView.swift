@@ -40,6 +40,10 @@ struct ContentView: View {
                 }
             }
             .animation(.easeInOut(duration: 0.3), value: network.isConnected)
+            .onReceive(NotificationCenter.default.publisher(for: .sessionExpired)) { _ in
+                APIService.shared.clearAuth()
+                isAuthenticated = false
+            }
         } else {
             LoginView(isAuthenticated: $isAuthenticated)
         }

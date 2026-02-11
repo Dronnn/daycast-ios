@@ -215,6 +215,68 @@ final class DataRepository {
         sync.enqueueSaveChannelSettings(settings)
     }
 
+    // MARK: - Item Field Updates
+
+    func updateItemImportance(id: String, importance: Int?) async throws {
+        guard network.isConnected else {
+            throw OfflineError.requiresNetwork("You're offline.")
+        }
+        let updated = try await api.updateItemFields(id: id, importance: importance)
+        cache.cacheItem(updated)
+    }
+
+    func updateItemIncludeInGeneration(id: String, include: Bool) async throws {
+        guard network.isConnected else {
+            throw OfflineError.requiresNetwork("You're offline.")
+        }
+        let updated = try await api.updateItemFields(id: id, includeInGeneration: include)
+        cache.cacheItem(updated)
+    }
+
+    // MARK: - Publish Input
+
+    func publishInputItem(inputItemId: String) async throws -> PublishedPostResponse {
+        guard network.isConnected else {
+            throw OfflineError.requiresNetwork("You're offline. Connect to publish.")
+        }
+        return try await api.publishInputItem(inputItemId: inputItemId)
+    }
+
+    func getInputPublishStatus(inputIds: [String]) async throws -> [String: String] {
+        guard network.isConnected else { return [:] }
+        let response = try await api.getInputPublishStatus(inputIds: inputIds)
+        var map: [String: String] = [:]
+        for (inputId, postId) in response.statuses {
+            if let postId { map[inputId] = postId }
+        }
+        return map
+    }
+
+    // MARK: - Generation Settings
+
+    func getGenerationSettings() async throws -> GenerationSettingsResponse {
+        guard network.isConnected else {
+            throw OfflineError.requiresNetwork("Settings unavailable offline.")
+        }
+        return try await api.getGenerationSettings()
+    }
+
+    func saveGenerationSettings(_ settings: GenerationSettingsRequest) async throws -> GenerationSettingsResponse {
+        guard network.isConnected else {
+            throw OfflineError.requiresNetwork("You're offline. Connect to save settings.")
+        }
+        return try await api.saveGenerationSettings(settings)
+    }
+
+    // MARK: - Export
+
+    func exportDay(date: String) async throws -> ExportResponse {
+        guard network.isConnected else {
+            throw OfflineError.requiresNetwork("Export unavailable offline.")
+        }
+        return try await api.exportDay(date: date)
+    }
+
     // MARK: - Public Feed (passthrough, no caching)
 
     func fetchPublicPosts(cursor: String? = nil, limit: Int = 10, channel: String? = nil) async throws -> PublicPostListResponse {

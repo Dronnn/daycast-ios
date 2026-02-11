@@ -2,10 +2,34 @@ import SwiftUI
 import PhotosUI
 import UIKit
 
+// MARK: - Star Rating View
+
+struct StarRatingView: View {
+    let rating: Int?
+    let onRate: (Int?) -> Void
+
+    var body: some View {
+        HStack(spacing: 2) {
+            ForEach(1...5, id: \.self) { n in
+                Button {
+                    onRate(rating == n ? nil : n)
+                } label: {
+                    Image(systemName: (rating ?? 0) >= n ? "star.fill" : "star")
+                        .font(.system(size: 12))
+                        .foregroundStyle((rating ?? 0) >= n ? .yellow : .gray.opacity(0.3))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
 struct FeedView: View {
     @State private var viewModel = FeedViewModel()
     @State private var showClearConfirmation = false
     @State private var fullscreenImage: UIImage?
+    @State private var expandedEdits: Set<String> = []
+    @State private var exportCopied = false
     @FocusState private var isComposerFocused: Bool
     @Environment(\.scenePhase) private var scenePhase
 
@@ -26,6 +50,11 @@ struct FeedView: View {
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Menu {
+                        Button {
+                            Task { await handleExport() }
+                        } label: {
+                            Label("Export", systemImage: "square.and.arrow.up")
+                        }
                         Button(role: .destructive) {
                             showClearConfirmation = true
                         } label: {
@@ -68,9 +97,45 @@ struct FeedView: View {
                     fullscreenImage = nil
                 }
             }
+            .overlay(alignment: .bottom) {
+                if exportCopied {
+                    Text("Exported to clipboard")
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.green.gradient, in: Capsule())
+                        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+                        .padding(.bottom, 80)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+                if let toast = viewModel.toastMessage {
+                    Text(toast)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .background(.green.gradient, in: Capsule())
+                        .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
+                        .padding(.bottom, 80)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                }
+            }
+            .animation(.easeInOut(duration: 0.3), value: exportCopied)
+            .animation(.easeInOut(duration: 0.3), value: viewModel.toastMessage)
             .onChange(of: scenePhase) { _, newPhase in
                 if newPhase == .active {
                     Task { await viewModel.fetchItems() }
+                }
+            }
+            .task {
+                // Poll server every 15s to sync changes from web
+                while !Task.isCancelled {
+                    try? await Task.sleep(for: .seconds(15))
+                    guard !Task.isCancelled else { break }
+                    await viewModel.fetchItems()
                 }
             }
         }
@@ -139,31 +204,117 @@ struct FeedView: View {
         HStack {
             Spacer(minLength: 60)
             VStack(alignment: .trailing, spacing: 4) {
-                itemBubble(item)
-                    .contextMenu {
-                        if item.type == .text || item.type == .url {
-                            Button {
-                                viewModel.startEditing(item)
-                            } label: {
-                                Label("Edit", systemImage: "pencil")
-                            }
-                        }
-                        Button {
-                            UIPasteboard.general.string = item.content
-                        } label: {
-                            Label("Copy", systemImage: "doc.on.doc")
-                        }
-                        Button(role: .destructive) {
-                            Task { await viewModel.deleteItem(item) }
-                        } label: {
-                            Label("Delete", systemImage: "trash")
+                VStack(alignment: .trailing, spacing: 6) {
+                    itemBubble(item)
+
+                    // Star rating for text/url items
+                    if item.type == .text || item.type == .url {
+                        StarRatingView(rating: item.importance) { newRating in
+                            Task { await viewModel.setImportance(itemId: item.id, importance: newRating) }
                         }
                     }
 
-                Text(formatTime(item.createdAt))
-                    .font(.caption2)
-                    .foregroundStyle(.tertiary)
-                    .padding(.trailing, 4)
+                    // Edit history badge + expansion
+                    if let edits = item.edits, !edits.isEmpty {
+                        Button {
+                            withAnimation {
+                                if expandedEdits.contains(item.id) {
+                                    expandedEdits.remove(item.id)
+                                } else {
+                                    expandedEdits.insert(item.id)
+                                }
+                            }
+                        } label: {
+                            Text("Edited (\(edits.count))")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(.ultraThinMaterial, in: Capsule())
+                        }
+                        .buttonStyle(.plain)
+
+                        if expandedEdits.contains(item.id) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                ForEach(edits, id: \.id) { edit in
+                                    VStack(alignment: .leading, spacing: 2) {
+                                        Text(edit.oldContent)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                        Text(formatTime(edit.editedAt))
+                                            .font(.caption2)
+                                            .foregroundStyle(.tertiary)
+                                    }
+                                    .padding(.leading, 8)
+                                    .overlay(alignment: .leading) {
+                                        Rectangle()
+                                            .fill(.secondary.opacity(0.3))
+                                            .frame(width: 2)
+                                    }
+                                }
+                            }
+                            .padding(.top, 4)
+                        }
+                    }
+                }
+                .contextMenu {
+                    if item.type == .text || item.type == .url {
+                        Button {
+                            viewModel.startEditing(item)
+                        } label: {
+                            Label("Edit", systemImage: "pencil")
+                        }
+                    }
+                    Button {
+                        UIPasteboard.general.string = item.content
+                    } label: {
+                        Label("Copy", systemImage: "doc.on.doc")
+                    }
+                    Button {
+                        Task { await viewModel.toggleIncludeInGeneration(itemId: item.id, include: !item.includeInGeneration) }
+                    } label: {
+                        Label(
+                            item.includeInGeneration ? "Exclude from Generation" : "Include in Generation",
+                            systemImage: item.includeInGeneration ? "eye.slash" : "eye"
+                        )
+                    }
+                    if item.type == .text {
+                        let isPublished = viewModel.publishedMap[item.id] != nil
+                        Button(role: isPublished ? .destructive : nil) {
+                            Task { await viewModel.togglePublish(itemId: item.id) }
+                        } label: {
+                            Label(
+                                isPublished ? "Unpublish" : "Publish",
+                                systemImage: isPublished ? "arrow.down.square" : "arrow.up.right.square"
+                            )
+                        }
+                    }
+                    Button(role: .destructive) {
+                        Task { await viewModel.deleteItem(item) }
+                    } label: {
+                        Label("Delete", systemImage: "trash")
+                    }
+                }
+
+                HStack(spacing: 4) {
+                    if !item.includeInGeneration {
+                        Image(systemName: "eye.slash")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    if viewModel.publishedMap[item.id] != nil {
+                        Text("Published")
+                            .font(.system(size: 10, weight: .semibold))
+                            .foregroundStyle(.white)
+                            .padding(.horizontal, 6)
+                            .padding(.vertical, 2)
+                            .background(.green, in: Capsule())
+                    }
+                    Text(formatTime(item.createdAt))
+                        .font(.caption2)
+                        .foregroundStyle(.tertiary)
+                }
+                .padding(.trailing, 4)
             }
         }
     }
@@ -187,10 +338,13 @@ struct FeedView: View {
     private func textBubble(_ item: InputItem) -> some View {
         Text(item.content)
             .font(.body)
-            .foregroundStyle(.white)
+            .foregroundStyle(item.includeInGeneration ? .white : Color(.secondaryLabel))
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
-            .background(Color.dcBlue, in: RoundedRectangle(cornerRadius: 18))
+            .background(
+                item.includeInGeneration ? Color.dcBlue : Color(.systemGray5),
+                in: RoundedRectangle(cornerRadius: 18)
+            )
             .textSelection(.enabled)
     }
 
@@ -203,6 +357,13 @@ struct FeedView: View {
                 .joined(separator: " ").trimmingCharacters(in: .whitespaces)
             : nil
 
+        let active = item.includeInGeneration
+        let bgColor: Color = active ? .dcBlue : Color(.systemGray5)
+        let primaryColor: Color = active ? .white.opacity(0.8) : Color(.secondaryLabel)
+        let secondaryColor: Color = active ? .white.opacity(0.7) : Color(.tertiaryLabel)
+        let tertiaryColor: Color = active ? .white.opacity(0.5) : Color(.tertiaryLabel)
+        let bodyColor: Color = active ? .white.opacity(0.9) : Color(.secondaryLabel)
+
         return VStack(alignment: .leading, spacing: 6) {
             // Domain label
             HStack(spacing: 4) {
@@ -212,12 +373,12 @@ struct FeedView: View {
                     .font(.caption)
                     .fontWeight(.medium)
             }
-            .foregroundStyle(.white.opacity(0.8))
+            .foregroundStyle(primaryColor)
 
             // URL text
             Text(url)
                 .font(.caption)
-                .foregroundStyle(.white.opacity(0.7))
+                .foregroundStyle(secondaryColor)
                 .lineLimit(1)
                 .truncationMode(.middle)
 
@@ -225,22 +386,22 @@ struct FeedView: View {
             if let source, !source.isEmpty {
                 Text(source)
                     .font(.caption2)
-                    .foregroundStyle(.white.opacity(0.5))
+                    .foregroundStyle(tertiaryColor)
             }
 
             // Extracted text preview
             if let extracted = item.extractedText, !extracted.isEmpty {
                 Divider()
-                    .background(.white.opacity(0.3))
+                    .background(active ? .white.opacity(0.3) : .secondary.opacity(0.3))
                 Text(extracted)
                     .font(.caption)
-                    .foregroundStyle(.white.opacity(0.9))
+                    .foregroundStyle(bodyColor)
                     .lineLimit(3)
             }
         }
         .padding(12)
         .frame(maxWidth: 280, alignment: .leading)
-        .background(Color.dcBlue, in: RoundedRectangle(cornerRadius: 16))
+        .background(bgColor, in: RoundedRectangle(cornerRadius: 16))
         .textSelection(.enabled)
         .onTapGesture {
             if let parsed = URL(string: url) {
@@ -355,6 +516,18 @@ struct FeedView: View {
             }
         }
         .presentationDetents([.medium])
+    }
+
+    // MARK: - Export Handler
+
+    func handleExport() async {
+        do {
+            let text = try await viewModel.exportDay()
+            UIPasteboard.general.string = text
+            exportCopied = true
+            try? await Task.sleep(for: .seconds(2))
+            exportCopied = false
+        } catch {}
     }
 
     // MARK: - Helpers

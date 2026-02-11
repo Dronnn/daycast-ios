@@ -94,7 +94,7 @@ struct BlogView: View {
     // MARK: - Post Card
 
     private func postCard(_ post: PublishedPostResponse) -> some View {
-        let channel = ChannelMeta.find(post.channelId)
+        let channel = post.channelId.map(ChannelMeta.find) ?? ChannelMeta(id: "personal", name: "Personal", description: "Published from input", letter: "P", gradientColors: ["#888", "#aaa"])
 
         return VStack(alignment: .leading, spacing: 0) {
             // Header
@@ -128,8 +128,12 @@ struct BlogView: View {
 
             // Badges
             HStack(spacing: 8) {
-                badgePill(post.style.capitalized)
-                badgePill(post.language.uppercased())
+                if let style = post.style {
+                    badgePill(style.capitalized)
+                }
+                if let language = post.language {
+                    badgePill(language.uppercased())
+                }
             }
             .padding(.horizontal, 20)
             .padding(.bottom, 18)

@@ -43,10 +43,12 @@ final class CachedInputItem {
     var updatedAt: String
     var isLocal: Bool
     var localTempId: String?
+    var importance: Int?
+    var includeInGeneration: Bool = true
 
     @Relationship(deleteRule: .cascade) var edits: [CachedInputItemEdit]
 
-    init(itemId: String, type: String, content: String, extractedText: String?, extractError: String?, date: String, cleared: Bool, createdAt: String, updatedAt: String, isLocal: Bool = false, localTempId: String? = nil) {
+    init(itemId: String, type: String, content: String, extractedText: String?, extractError: String?, date: String, cleared: Bool, createdAt: String, updatedAt: String, isLocal: Bool = false, localTempId: String? = nil, importance: Int? = nil, includeInGeneration: Bool = true) {
         self.itemId = itemId
         self.type = type
         self.content = content
@@ -58,6 +60,8 @@ final class CachedInputItem {
         self.updatedAt = updatedAt
         self.isLocal = isLocal
         self.localTempId = localTempId
+        self.importance = importance
+        self.includeInGeneration = includeInGeneration
         self.edits = []
     }
 
@@ -71,7 +75,9 @@ final class CachedInputItem {
             date: item.date,
             cleared: item.cleared,
             createdAt: item.createdAt,
-            updatedAt: item.updatedAt
+            updatedAt: item.updatedAt,
+            importance: item.importance,
+            includeInGeneration: item.includeInGeneration
         )
         self.edits = (item.edits ?? []).map { CachedInputItemEdit(from: $0) }
     }
@@ -87,7 +93,9 @@ final class CachedInputItem {
             cleared: cleared,
             createdAt: createdAt,
             updatedAt: updatedAt,
-            edits: edits.map { $0.toApiModel() }
+            edits: edits.map { $0.toApiModel() },
+            importance: importance,
+            includeInGeneration: includeInGeneration
         )
     }
 }

@@ -28,6 +28,10 @@ struct AuthResponse: Codable, Sendable {
     let username: String
 }
 
+extension Notification.Name {
+    static let sessionExpired = Notification.Name("sessionExpired")
+}
+
 struct APIService: Sendable {
     static let shared = APIService()
 
@@ -120,6 +124,7 @@ struct APIService: Sendable {
 
         if let http = response as? HTTPURLResponse {
             if http.statusCode == 401 {
+                NotificationCenter.default.post(name: .sessionExpired, object: nil)
                 throw APIServiceError.unauthorized
             }
             if !(200..<300).contains(http.statusCode) {
@@ -166,6 +171,7 @@ struct APIService: Sendable {
 
         if let http = response as? HTTPURLResponse {
             if http.statusCode == 401 {
+                NotificationCenter.default.post(name: .sessionExpired, object: nil)
                 throw APIServiceError.unauthorized
             }
             if !(200..<300).contains(http.statusCode) {
@@ -197,6 +203,30 @@ struct APIService: Sendable {
 
     func clearDay(date: String) async throws {
         try await requestVoid("DELETE", path: "/inputs?date=\(date)")
+    }
+
+    func updateItemFields(id: String, importance: Int? = nil, includeInGeneration: Bool? = nil) async throws -> InputItem {
+        struct UpdateRequest: Encodable {
+            var importance: Int?
+            var includeInGeneration: Bool?
+
+            func encode(to encoder: Encoder) throws {
+                var container = encoder.container(keyedBy: CodingKeys.self)
+                if let importance {
+                    try container.encode(importance, forKey: .importance)
+                }
+                if let includeInGeneration {
+                    try container.encode(includeInGeneration, forKey: .includeInGeneration)
+                }
+            }
+
+            enum CodingKeys: String, CodingKey {
+                case importance
+                case includeInGeneration = "include_in_generation"
+            }
+        }
+        let body = UpdateRequest(importance: importance, includeInGeneration: includeInGeneration)
+        return try await request("PUT", path: "/inputs/\(id)", body: body)
     }
 
     // MARK: - Image Upload
@@ -236,6 +266,7 @@ struct APIService: Sendable {
 
         if let http = response as? HTTPURLResponse {
             if http.statusCode == 401 {
+                NotificationCenter.default.post(name: .sessionExpired, object: nil)
                 throw APIServiceError.unauthorized
             }
             if !(200..<300).contains(http.statusCode) {
@@ -317,6 +348,34 @@ struct APIService: Sendable {
 
     func saveChannelSettings(_ settings: [ChannelSetting]) async throws {
         try await requestVoid("POST", path: "/settings/channels", body: SaveChannelSettingsRequest(channels: settings))
+    }
+
+    // MARK: - Publish Input
+
+    func publishInputItem(inputItemId: String) async throws -> PublishedPostResponse {
+        let body = PublishInputRequest(inputItemId: inputItemId)
+        return try await request("POST", path: "/publish/input", body: body)
+    }
+
+    func getInputPublishStatus(inputIds: [String]) async throws -> PublishStatusResponse {
+        let ids = inputIds.joined(separator: ",")
+        return try await request("GET", path: "/publish/input-status?input_ids=\(ids)")
+    }
+
+    // MARK: - Generation Settings
+
+    func getGenerationSettings() async throws -> GenerationSettingsResponse {
+        try await request("GET", path: "/settings/generation")
+    }
+
+    func saveGenerationSettings(_ settings: GenerationSettingsRequest) async throws -> GenerationSettingsResponse {
+        try await request("POST", path: "/settings/generation", body: settings)
+    }
+
+    // MARK: - Export
+
+    func exportDay(date: String) async throws -> ExportResponse {
+        try await request("GET", path: "/inputs/export?date=\(date)&format=plain")
     }
 }
 

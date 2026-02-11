@@ -10,6 +10,10 @@ class ChannelsViewModel {
     var isLoading = false
     var errorMessage: String?
 
+    // Generation settings
+    var customInstruction: String = ""
+    var separateBusinessPersonal: Bool = false
+
     // MARK: - Private
 
     private let repo = DataRepository.shared
@@ -32,7 +36,31 @@ class ChannelsViewModel {
                 settings[channel.id] = defaultSetting(for: channel.id)
             }
         }
+        await loadGenerationSettings()
         isLoading = false
+    }
+
+    // MARK: - Generation Settings
+
+    func loadGenerationSettings() async {
+        do {
+            let settings = try await DataRepository.shared.getGenerationSettings()
+            customInstruction = settings.customInstruction ?? ""
+            separateBusinessPersonal = settings.separateBusinessPersonal
+        } catch {}
+    }
+
+    func saveGenerationSettings() async {
+        do {
+            let request = GenerationSettingsRequest(
+                customInstruction: customInstruction.isEmpty ? nil : customInstruction,
+                separateBusinessPersonal: separateBusinessPersonal
+            )
+            _ = try await DataRepository.shared.saveGenerationSettings(request)
+            showSaved = true
+            try? await Task.sleep(for: .seconds(1.5))
+            showSaved = false
+        } catch {}
     }
 
     // MARK: - Save

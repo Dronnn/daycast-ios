@@ -56,7 +56,7 @@ struct BlogPostDetailView: View {
     // MARK: - Content
 
     private func postContent(_ post: PublishedPostResponse) -> some View {
-        let channel = ChannelMeta.find(post.channelId)
+        let channel = post.channelId.map(ChannelMeta.find) ?? ChannelMeta(id: "personal", name: "Personal", description: "Published from input", letter: "P", gradientColors: ["#888", "#aaa"])
 
         return ScrollView {
             VStack(alignment: .leading, spacing: 20) {
@@ -76,8 +76,12 @@ struct BlogPostDetailView: View {
 
                 // Badges
                 HStack(spacing: 8) {
-                    badgePill(post.style.capitalized)
-                    badgePill(post.language.uppercased())
+                    if let style = post.style {
+                        badgePill(style.capitalized)
+                    }
+                    if let language = post.language {
+                        badgePill(language.uppercased())
+                    }
                 }
 
                 // Full text

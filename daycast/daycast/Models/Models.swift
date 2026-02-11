@@ -31,13 +31,47 @@ struct InputItem: Codable, Identifiable, Sendable {
     let createdAt: String
     let updatedAt: String
     var edits: [InputItemEdit]?
+    let importance: Int?
+    let includeInGeneration: Bool
 
     enum CodingKeys: String, CodingKey {
-        case id, type, content, date, cleared, edits
+        case id, type, content, date, cleared, edits, importance
         case extractedText = "extracted_text"
         case extractError = "extract_error"
         case createdAt = "created_at"
         case updatedAt = "updated_at"
+        case includeInGeneration = "include_in_generation"
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(String.self, forKey: .id)
+        type = try container.decode(InputItemType.self, forKey: .type)
+        content = try container.decode(String.self, forKey: .content)
+        extractedText = try container.decodeIfPresent(String.self, forKey: .extractedText)
+        extractError = try container.decodeIfPresent(String.self, forKey: .extractError)
+        date = try container.decode(String.self, forKey: .date)
+        cleared = try container.decode(Bool.self, forKey: .cleared)
+        createdAt = try container.decode(String.self, forKey: .createdAt)
+        updatedAt = try container.decode(String.self, forKey: .updatedAt)
+        edits = try container.decodeIfPresent([InputItemEdit].self, forKey: .edits)
+        importance = try container.decodeIfPresent(Int.self, forKey: .importance)
+        includeInGeneration = try container.decodeIfPresent(Bool.self, forKey: .includeInGeneration) ?? true
+    }
+
+    init(id: String, type: InputItemType, content: String, extractedText: String?, extractError: String?, date: String, cleared: Bool, createdAt: String, updatedAt: String, edits: [InputItemEdit]? = nil, importance: Int? = nil, includeInGeneration: Bool = true) {
+        self.id = id
+        self.type = type
+        self.content = content
+        self.extractedText = extractedText
+        self.extractError = extractError
+        self.date = date
+        self.cleared = cleared
+        self.createdAt = createdAt
+        self.updatedAt = updatedAt
+        self.edits = edits
+        self.importance = importance
+        self.includeInGeneration = includeInGeneration
     }
 }
 
@@ -45,10 +79,24 @@ struct InputItemCreateRequest: Codable, Sendable {
     let type: InputItemType
     let content: String
     let date: String
+    var importance: Int?
+    var includeInGeneration: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case type, content, date, importance
+        case includeInGeneration = "include_in_generation"
+    }
 }
 
 struct InputItemUpdateRequest: Codable, Sendable {
-    let content: String
+    var content: String?
+    var importance: Int?
+    var includeInGeneration: Bool?
+
+    enum CodingKeys: String, CodingKey {
+        case content, importance
+        case includeInGeneration = "include_in_generation"
+    }
 }
 
 // MARK: - Generation
@@ -109,16 +157,17 @@ struct PublishRequest: Codable, Sendable {
 struct PublishedPostResponse: Codable, Identifiable, Hashable, Sendable {
     let id: String
     let slug: String
-    let channelId: String
-    let style: String
-    let language: String
+    let channelId: String?
+    let style: String?
+    let language: String?
     let text: String
     let date: String
     let publishedAt: String
     let inputItemsPreview: [String]
+    let source: String?
 
     enum CodingKeys: String, CodingKey {
-        case id, slug, style, language, text, date
+        case id, slug, style, language, text, date, source
         case channelId = "channel_id"
         case publishedAt = "published_at"
         case inputItemsPreview = "input_items_preview"
@@ -127,6 +176,42 @@ struct PublishedPostResponse: Codable, Identifiable, Hashable, Sendable {
 
 struct PublishStatusResponse: Codable, Sendable {
     let statuses: [String: String?]
+}
+
+struct PublishInputRequest: Codable, Sendable {
+    let inputItemId: String
+
+    enum CodingKeys: String, CodingKey {
+        case inputItemId = "input_item_id"
+    }
+}
+
+struct ExportResponse: Codable, Sendable {
+    let text: String
+    let date: String
+    let count: Int
+}
+
+// MARK: - Generation Settings
+
+struct GenerationSettingsRequest: Codable, Sendable {
+    var customInstruction: String?
+    var separateBusinessPersonal: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case customInstruction = "custom_instruction"
+        case separateBusinessPersonal = "separate_business_personal"
+    }
+}
+
+struct GenerationSettingsResponse: Codable, Sendable {
+    var customInstruction: String?
+    var separateBusinessPersonal: Bool
+
+    enum CodingKeys: String, CodingKey {
+        case customInstruction = "custom_instruction"
+        case separateBusinessPersonal = "separate_business_personal"
+    }
 }
 
 // MARK: - Days / History
@@ -230,6 +315,16 @@ struct PublicPostListResponse: Codable, Sendable {
 
 enum StyleOption: String, CaseIterable, Sendable {
     case concise, detailed, structured, plan, advisory, casual, funny, serious
+    case listNumbered = "list_numbered"
+    case listBulleted = "list_bulleted"
+
+    var displayName: String {
+        switch self {
+        case .listNumbered: "List (Numbered)"
+        case .listBulleted: "List (Bulleted)"
+        default: rawValue.capitalized
+        }
+    }
 }
 
 enum LengthOption: String, CaseIterable, Sendable {
