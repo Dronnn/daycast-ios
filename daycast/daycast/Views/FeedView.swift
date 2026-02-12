@@ -2,11 +2,14 @@ import SwiftUI
 import PhotosUI
 import UIKit
 
-// MARK: - Star Rating View
+// MARK: - Flame Rating View
 
-struct StarRatingView: View {
+struct FlameRatingView: View {
     let rating: Int?
     let onRate: (Int?) -> Void
+
+    private let sizes: [CGFloat] = [8, 11, 14, 17, 20]
+    private let flameColor = Color(red: 1.0, green: 0.42, blue: 0.21)
 
     var body: some View {
         HStack(spacing: 2) {
@@ -14,9 +17,10 @@ struct StarRatingView: View {
                 Button {
                     onRate(rating == n ? nil : n)
                 } label: {
-                    Image(systemName: (rating ?? 0) >= n ? "star.fill" : "star")
-                        .font(.system(size: 12))
-                        .foregroundStyle((rating ?? 0) >= n ? .yellow : .gray.opacity(0.3))
+                    Image(systemName: "flame.fill")
+                        .font(.system(size: sizes[n - 1]))
+                        .foregroundStyle(flameColor)
+                        .opacity((rating ?? 0) >= n ? 1.0 : 0.25)
                 }
                 .buttonStyle(.plain)
             }
@@ -207,8 +211,8 @@ struct FeedView: View {
                 VStack(alignment: .trailing, spacing: 6) {
                     itemBubble(item)
 
-                    // Star rating
-                    StarRatingView(rating: item.importance) { newRating in
+                    // Flame rating
+                    FlameRatingView(rating: item.importance) { newRating in
                         Task { await viewModel.setImportance(itemId: item.id, importance: newRating) }
                     }
 

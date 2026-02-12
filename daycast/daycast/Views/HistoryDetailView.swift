@@ -164,13 +164,15 @@ private struct InputItemRow: View {
                 imageContent
             }
 
-            // Importance stars
+            // Importance flames
             if let importance = item.importance, importance > 0 {
+                let sizes: [CGFloat] = [8, 11, 14, 17, 20]
+                let flameColor = Color(red: 1.0, green: 0.42, blue: 0.21)
                 HStack(spacing: 2) {
-                    ForEach(1...5, id: \.self) { n in
-                        Image(systemName: importance >= n ? "star.fill" : "star")
-                            .font(.system(size: 10))
-                            .foregroundStyle(importance >= n ? .yellow : .gray.opacity(0.3))
+                    ForEach(1...importance, id: \.self) { n in
+                        Image(systemName: "flame.fill")
+                            .font(.system(size: sizes[n - 1]))
+                            .foregroundStyle(flameColor)
                     }
                 }
             }
