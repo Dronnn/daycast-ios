@@ -125,7 +125,6 @@ class FeedViewModel {
     // MARK: - Item Fields
 
     func setImportance(itemId: String, importance: Int?) async {
-        let snapshot = items
         // Optimistic local update
         if let index = items.firstIndex(where: { $0.id == itemId }) {
             let old = items[index]
@@ -138,16 +137,10 @@ class FeedViewModel {
                 includeInGeneration: old.includeInGeneration
             )
         }
-        do {
-            try await repo.updateItemImportance(id: itemId, importance: importance)
-        } catch {
-            items = snapshot
-            errorMessage = "Failed to save: \(error.localizedDescription)"
-        }
+        await repo.updateItemImportance(id: itemId, importance: importance)
     }
 
     func toggleIncludeInGeneration(itemId: String, include: Bool) async {
-        let snapshot = items
         // Optimistic local update
         if let index = items.firstIndex(where: { $0.id == itemId }) {
             let old = items[index]
@@ -160,12 +153,7 @@ class FeedViewModel {
                 includeInGeneration: include
             )
         }
-        do {
-            try await repo.updateItemIncludeInGeneration(id: itemId, include: include)
-        } catch {
-            items = snapshot
-            errorMessage = "Failed to save: \(error.localizedDescription)"
-        }
+        await repo.updateItemIncludeInGeneration(id: itemId, include: include)
     }
 
     func togglePublish(itemId: String) async {

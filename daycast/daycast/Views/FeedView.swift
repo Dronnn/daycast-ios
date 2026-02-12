@@ -415,7 +415,7 @@ struct FeedView: View {
     // MARK: - Image Bubble
 
     private func imageBubble(_ item: InputItem) -> some View {
-        AuthenticatedImageView(path: item.content) { uiImage in
+        AuthenticatedImageView(path: item.content, itemId: item.id) { uiImage in
             fullscreenImage = uiImage
         }
         .frame(maxWidth: 240)
@@ -581,6 +581,7 @@ struct CameraView: UIViewControllerRepresentable {
 
 struct AuthenticatedImageView: View {
     let path: String
+    var itemId: String?
     var onTap: ((UIImage) -> Void)?
 
     @State private var uiImage: UIImage?
@@ -594,7 +595,10 @@ struct AuthenticatedImageView: View {
                     .scaledToFit()
                     .onTapGesture { onTap?(uiImage) }
             } else if failed {
-                imagePlaceholder(systemName: "exclamationmark.triangle", text: "Failed to load")
+                imagePlaceholder(
+                    systemName: path == "[Image pending upload]" ? "arrow.up.circle" : "exclamationmark.triangle",
+                    text: path == "[Image pending upload]" ? "Pending upload" : "Failed to load"
+                )
             } else {
                 ProgressView()
                     .frame(width: 200, height: 150)
@@ -604,6 +608,29 @@ struct AuthenticatedImageView: View {
     }
 
     private func loadImage() async {
+        // Handle pending upload images — try to load from pending_images/ directory
+        if path == "[Image pending upload]", let itemId {
+            if let image = loadPendingImage(itemId: itemId) {
+                uiImage = image
+                return
+            }
+            failed = true
+            return
+        }
+
+        // Check local image cache first
+        if let cached = await ImageCacheService.shared.getCachedImage(for: path) {
+            uiImage = cached
+            return
+        }
+
+        // Pending upload without itemId — can't locate the file
+        if path == "[Image pending upload]" {
+            failed = true
+            return
+        }
+
+        // Fetch from server
         guard let url = APIService.shared.imageURL(path: path) else {
             failed = true
             return
@@ -616,6 +643,7 @@ struct AuthenticatedImageView: View {
             let (data, response) = try await URLSession.shared.data(for: request)
             if let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
                let image = UIImage(data: data) {
+                await ImageCacheService.shared.cacheImage(data: data, for: path)
                 uiImage = image
             } else {
                 failed = true
@@ -623,6 +651,20 @@ struct AuthenticatedImageView: View {
         } catch {
             failed = true
         }
+    }
+
+    private func loadPendingImage(itemId: String) -> UIImage? {
+        let docs = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask).first!
+        let pendingDir = docs.appendingPathComponent("pending_images", isDirectory: true)
+        guard let files = try? FileManager.default.contentsOfDirectory(at: pendingDir, includingPropertiesForKeys: nil) else {
+            return nil
+        }
+        // Pending files are named <tempId>_<filename>
+        if let match = files.first(where: { $0.lastPathComponent.hasPrefix("\(itemId)_") }),
+           let data = try? Data(contentsOf: match) {
+            return UIImage(data: data)
+        }
+        return nil
     }
 
     private func imagePlaceholder(systemName: String, text: String) -> some View {

@@ -260,33 +260,9 @@ private struct InputItemRow: View {
     // MARK: - Image Content
 
     private var imageContent: some View {
-        Group {
-            if let imageURL = APIService.shared.imageURL(path: item.content) {
-                AsyncImage(url: imageURL) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(contentMode: .fit)
-                            .frame(maxHeight: 200)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-                    case .failure:
-                        Label("Failed to load image", systemImage: "photo")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    case .empty:
-                        ProgressView()
-                            .frame(height: 100)
-                    @unknown default:
-                        EmptyView()
-                    }
-                }
-            } else {
-                Label(item.content, systemImage: "photo")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-        }
+        AuthenticatedImageView(path: item.content, itemId: item.id)
+            .frame(maxHeight: 200)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     // MARK: - Badge

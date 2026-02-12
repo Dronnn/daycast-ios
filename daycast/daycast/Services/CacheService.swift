@@ -26,8 +26,16 @@ final class CacheService {
 
     func cacheItems(_ items: [InputItem], for date: String) {
         guard let ctx = modelContext else { return }
-        clearCachedItemsInternal(date: date, context: ctx)
-        for item in items {
+        let pendingIds = getPendingSyncEntityIds()
+        // Delete cached items that don't have pending sync ops
+        let predicate = #Predicate<CachedInputItem> { $0.date == date }
+        if let existing = try? ctx.fetch(FetchDescriptor(predicate: predicate)) {
+            for cached in existing where !pendingIds.contains(cached.itemId) {
+                ctx.delete(cached)
+            }
+        }
+        // Insert server items, skipping those with pending sync ops
+        for item in items where !pendingIds.contains(item.id) {
             ctx.insert(CachedInputItem(from: item))
         }
         trySave(ctx)
@@ -51,6 +59,26 @@ final class CacheService {
         let predicate = #Predicate<CachedInputItem> { $0.itemId == id }
         if let item = try? ctx.fetch(FetchDescriptor(predicate: predicate)).first {
             item.content = content
+            item.updatedAt = ISO8601DateFormatter().string(from: .now)
+            trySave(ctx)
+        }
+    }
+
+    func updateCachedItemImportance(id: String, importance: Int?) {
+        guard let ctx = modelContext else { return }
+        let predicate = #Predicate<CachedInputItem> { $0.itemId == id }
+        if let item = try? ctx.fetch(FetchDescriptor(predicate: predicate)).first {
+            item.importance = importance
+            item.updatedAt = ISO8601DateFormatter().string(from: .now)
+            trySave(ctx)
+        }
+    }
+
+    func updateCachedItemIncludeInGeneration(id: String, include: Bool) {
+        guard let ctx = modelContext else { return }
+        let predicate = #Predicate<CachedInputItem> { $0.itemId == id }
+        if let item = try? ctx.fetch(FetchDescriptor(predicate: predicate)).first {
+            item.includeInGeneration = include
             item.updatedAt = ISO8601DateFormatter().string(from: .now)
             trySave(ctx)
         }
@@ -190,7 +218,21 @@ final class CacheService {
             for sum in old { ctx.delete(sum) }
         }
 
+        // Evict old cached images
+        Task {
+            await ImageCacheService.shared.evictOldImages(maxDays: maxCacheDays)
+        }
+
         trySave(ctx)
+    }
+
+    // MARK: - Pending Sync Helpers
+
+    func getPendingSyncEntityIds() -> Set<String> {
+        guard let ctx = modelContext else { return [] }
+        let descriptor = FetchDescriptor<PendingSyncOperation>()
+        guard let ops = try? ctx.fetch(descriptor) else { return [] }
+        return Set(ops.map(\.entityId))
     }
 
     // MARK: - Private

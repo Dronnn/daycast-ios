@@ -64,7 +64,7 @@ final class SyncService {
         guard let ctx = modelContext else { return }
         // Remove any pending updates for the same ID
         let predicate = #Predicate<PendingSyncOperation> {
-            $0.entityId == id && ($0.operationType == "update" || $0.operationType == "create")
+            $0.entityId == id && ($0.operationType == "update" || $0.operationType == "create" || $0.operationType == "updateFields")
         }
         if let existing = try? ctx.fetch(FetchDescriptor(predicate: predicate)) {
             for op in existing { ctx.delete(op) }
@@ -119,6 +119,39 @@ final class SyncService {
         trySave(ctx)
     }
 
+    func enqueueUpdateFields(id: String, importance: Int? = nil, includeInGeneration: Bool? = nil) {
+        guard let ctx = modelContext else { return }
+        let predicate = #Predicate<PendingSyncOperation> {
+            $0.entityId == id && $0.operationType == "updateFields"
+        }
+        // Start with existing payload values to preserve previously queued fields
+        var dict: [String: String] = [:]
+        if let existing = try? ctx.fetch(FetchDescriptor(predicate: predicate)) {
+            if let first = existing.first,
+               let payload = first.payload,
+               let oldDict = try? JSONDecoder().decode([String: String].self, from: payload) {
+                dict = oldDict
+            }
+            for op in existing { ctx.delete(op) }
+        }
+        // Merge new values (overwriting old if present)
+        if let importance {
+            dict["importance"] = String(importance)
+        }
+        if let includeInGeneration {
+            dict["includeInGeneration"] = String(includeInGeneration)
+        }
+        let payload = try? JSONEncoder().encode(dict)
+        let op = PendingSyncOperation(
+            operationType: "updateFields",
+            entityType: "inputItem",
+            entityId: id,
+            payload: payload
+        )
+        ctx.insert(op)
+        trySave(ctx)
+    }
+
     func enqueueSaveChannelSettings(_ settings: [ChannelSetting]) {
         guard let ctx = modelContext else { return }
         // Remove any previous channel settings operations
@@ -154,8 +187,8 @@ final class SyncService {
         guard let operations = try? ctx.fetch(descriptor), !operations.isEmpty else { return }
 
         for op in operations {
-            // Skip update/delete for temp IDs whose create hasn't synced yet
-            if (op.operationType == "update" || op.operationType == "delete"),
+            // Skip update/delete/updateFields for temp IDs whose create hasn't synced yet
+            if (op.operationType == "update" || op.operationType == "delete" || op.operationType == "updateFields"),
                op.entityId.hasPrefix("temp_") {
                 continue
             }
@@ -220,7 +253,10 @@ final class SyncService {
             guard let payload = op.payload,
                   let dict = try? JSONDecoder().decode([String: String].self, from: payload),
                   let content = dict["content"] else { return }
-            _ = try await api.updateItem(id: op.entityId, content: content)
+            let updated = try await api.updateItem(id: op.entityId, content: content)
+            if shouldAcceptServerVersion(entityId: op.entityId, serverUpdatedAt: updated.updatedAt) {
+                cache.cacheItem(updated)
+            }
 
         case "delete":
             try await api.deleteItem(id: op.entityId)
@@ -241,6 +277,20 @@ final class SyncService {
             remapPendingOperations(tempId: op.entityId, serverId: serverItem.id)
             deleteImageFromDocuments(filePath: filePath)
 
+        case "updateFields":
+            guard let payload = op.payload,
+                  let dict = try? JSONDecoder().decode([String: String].self, from: payload) else { return }
+            let importance = dict["importance"].flatMap { Int($0) }
+            let includeInGeneration = dict["includeInGeneration"].flatMap { Bool($0) }
+            let updated = try await api.updateItemFields(
+                id: op.entityId,
+                importance: importance,
+                includeInGeneration: includeInGeneration
+            )
+            if shouldAcceptServerVersion(entityId: op.entityId, serverUpdatedAt: updated.updatedAt) {
+                cache.cacheItem(updated)
+            }
+
         case "saveChannelSettings":
             guard let payload = op.payload,
                   let request = try? JSONDecoder().decode(SaveChannelSettingsRequest.self, from: payload) else { return }
@@ -260,6 +310,17 @@ final class SyncService {
             }
             trySave(ctx)
         }
+    }
+
+    // MARK: - Conflict Resolution
+
+    private func shouldAcceptServerVersion(entityId: String, serverUpdatedAt: String) -> Bool {
+        guard let ctx = cache.modelContext else { return true }
+        let predicate = #Predicate<CachedInputItem> { $0.itemId == entityId }
+        guard let cached = try? ctx.fetch(FetchDescriptor(predicate: predicate)).first else {
+            return true // No local version, accept server
+        }
+        return serverUpdatedAt >= cached.updatedAt
     }
 
     // MARK: - Image File Helpers

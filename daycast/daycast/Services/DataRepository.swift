@@ -217,20 +217,38 @@ final class DataRepository {
 
     // MARK: - Item Field Updates
 
-    func updateItemImportance(id: String, importance: Int?) async throws {
-        guard network.isConnected else {
-            throw OfflineError.requiresNetwork("You're offline.")
+    func updateItemImportance(id: String, importance: Int?) async {
+        // Update cache immediately (local-first)
+        cache.updateCachedItemImportance(id: id, importance: importance)
+
+        if network.isConnected {
+            do {
+                let updated = try await api.updateItemFields(id: id, importance: importance)
+                cache.cacheItem(updated)
+            } catch {
+                // Network failed — already cached locally, enqueue for sync
+                sync.enqueueUpdateFields(id: id, importance: importance)
+            }
+        } else {
+            // Offline — enqueue for sync when back online
+            sync.enqueueUpdateFields(id: id, importance: importance)
         }
-        let updated = try await api.updateItemFields(id: id, importance: importance)
-        cache.cacheItem(updated)
     }
 
-    func updateItemIncludeInGeneration(id: String, include: Bool) async throws {
-        guard network.isConnected else {
-            throw OfflineError.requiresNetwork("You're offline.")
+    func updateItemIncludeInGeneration(id: String, include: Bool) async {
+        // Update cache immediately (local-first)
+        cache.updateCachedItemIncludeInGeneration(id: id, include: include)
+
+        if network.isConnected {
+            do {
+                let updated = try await api.updateItemFields(id: id, includeInGeneration: include)
+                cache.cacheItem(updated)
+            } catch {
+                sync.enqueueUpdateFields(id: id, includeInGeneration: include)
+            }
+        } else {
+            sync.enqueueUpdateFields(id: id, includeInGeneration: include)
         }
-        let updated = try await api.updateItemFields(id: id, includeInGeneration: include)
-        cache.cacheItem(updated)
     }
 
     // MARK: - Publish Input
