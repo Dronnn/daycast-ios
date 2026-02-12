@@ -32,6 +32,14 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 - **Auto-update** — notification body updates with the actual item count whenever you add or clear items in Feed.
 - **Settings** — accessible from Channels tab `⋯` menu → Reminders. Master toggle requests notification permission on first enable.
 
+### Offline Mode
+
+- **Full offline support** — add/edit/delete input items, change importance ratings (1–5 flames), toggle include/exclude from generation, and adjust channel settings without network connectivity.
+- **Image caching** — 2-layer cache (memory + disk) via `ImageCacheService` actor. SHA256 filenames, 20-day auto-eviction. Cache-first loading in `AuthenticatedImageView`. Pending uploads clearly marked.
+- **Sync queue** — changes persist locally. Syncs to server when connection restored. Last-write-wins conflict resolution by `updatedAt` timestamp.
+- **Protected sync ops** — `CacheService` prevents cached items from being overwritten while pending sync operations are in progress.
+- **Merge on sync** — `SyncService` supports "updateFields" operation type with intelligent payload merging for partial updates.
+
 ### Auth
 
 - **Login / Register** — username + password authentication. JWT stored in UserDefaults (App Groups). Shows login screen when no token.
@@ -49,9 +57,9 @@ SwiftUI iOS client for DayCast — a personal AI-powered service that transforms
 
 MVVM with 4 layers:
 
-- **Views** — SwiftUI views (`BlogView`, `BlogPostDetailView`, `GenerateView`, `FeedView`, `ChannelsView`, `RemindersSettingsView`, `HistoryView`, `HistoryDetailView`, `LoginView`)
+- **Views** — SwiftUI views (`BlogView`, `BlogPostDetailView`, `GenerateView`, `FeedView`, `ChannelsView`, `RemindersSettingsView`, `HistoryView`, `HistoryDetailView`, `LoginView`), `AuthenticatedImageView` (cache-first image loading with offline support)
 - **ViewModels** — `@Observable` classes (`BlogViewModel`, `FeedViewModel`, `GenerateViewModel`, `ChannelsViewModel`, `HistoryViewModel`, `HistoryDetailViewModel`)
-- **Services** — `APIService` singleton (URLSession async/await, JWT auth + public endpoints), `NotificationManager` singleton (local push notifications scheduling via UNUserNotificationCenter)
+- **Services** — `APIService` singleton (URLSession async/await, JWT auth + public endpoints), `NotificationManager` singleton (local push notifications), `CacheService` singleton (persistent local storage with conflict protection), `ImageCacheService` actor (2-layer image cache with disk eviction), `SyncService` (offline change queue with merge operations)
 - **Models** — Codable DTOs matching the backend API (`InputItem`, `Generation`, `GenerationResult`, `ChannelSetting`, `PublishedPostResponse`, `PublicPostListResponse`, `GenerationSettingsRequest/Response`, `ExportResponse`, etc.)
 - **Shared** — `SharedTokenStorage` (App Group UserDefaults), `ShareExtensionAPI` (lightweight API client for extension)
 - **DayCastShare** — Share Extension target (`ShareExtensionView`, `ShareViewController`)
