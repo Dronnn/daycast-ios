@@ -257,6 +257,11 @@ struct APIService: Sendable {
         body.append("Content-Disposition: form-data; name=\"date\"\r\n\r\n".data(using: .utf8)!)
         body.append(date.data(using: .utf8)!)
         body.append("\r\n".data(using: .utf8)!)
+        // Importance part
+        body.append("--\(boundary)\r\n".data(using: .utf8)!)
+        body.append("Content-Disposition: form-data; name=\"importance\"\r\n\r\n".data(using: .utf8)!)
+        body.append("5".data(using: .utf8)!)
+        body.append("\r\n".data(using: .utf8)!)
         // End
         body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 

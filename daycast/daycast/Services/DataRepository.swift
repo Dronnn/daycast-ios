@@ -30,7 +30,7 @@ final class DataRepository {
     func createItem(type: InputItemType, content: String, date: String) async -> InputItem {
         if network.isConnected {
             do {
-                let request = InputItemCreateRequest(type: type, content: content, date: date)
+                let request = InputItemCreateRequest(type: type, content: content, date: date, importance: 5)
                 let item = try await api.createItem(request)
                 cache.cacheItem(item)
                 return item

@@ -207,11 +207,9 @@ struct FeedView: View {
                 VStack(alignment: .trailing, spacing: 6) {
                     itemBubble(item)
 
-                    // Star rating for text/url items
-                    if item.type == .text || item.type == .url {
-                        StarRatingView(rating: item.importance) { newRating in
-                            Task { await viewModel.setImportance(itemId: item.id, importance: newRating) }
-                        }
+                    // Star rating
+                    StarRatingView(rating: item.importance) { newRating in
+                        Task { await viewModel.setImportance(itemId: item.id, importance: newRating) }
                     }
 
                     // Edit history badge + expansion
