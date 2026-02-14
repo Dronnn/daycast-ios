@@ -195,18 +195,24 @@ final class SyncService {
 
             do {
                 try await processOperation(op)
+                NetworkMonitor.shared.reportSuccess()
                 ctx.delete(op)
                 trySave(ctx)
             } catch let error as APIServiceError where error == .unauthorized {
                 authError = true
                 break
             } catch {
+                NetworkMonitor.shared.reportFailure(error)
                 op.retryCount += 1
                 op.lastError = error.localizedDescription
                 trySave(ctx)
                 if op.retryCount >= 5 {
                     ctx.delete(op)
                     trySave(ctx)
+                }
+                // If server became unreachable, stop processing queue
+                if !NetworkMonitor.shared.isConnected {
+                    break
                 }
             }
         }

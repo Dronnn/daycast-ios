@@ -111,7 +111,7 @@ struct BlogPostDetailView: View {
     private func loadPost() async {
         isLoading = true
         do {
-            post = try await APIService.shared.fetchPublicPost(slug: slug)
+            post = try await DataRepository.shared.fetchPublicPost(slug: slug)
         } catch {
             errorMessage = error.localizedDescription
         }

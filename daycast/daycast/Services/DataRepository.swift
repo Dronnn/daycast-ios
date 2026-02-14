@@ -12,12 +12,37 @@ final class DataRepository {
 
     private init() {}
 
+    // MARK: - API Call Wrapper
+
+    /// Wraps an API call, reporting success/failure to NetworkMonitor.
+    private func apiCall<T>(_ block: () async throws -> T) async throws -> T {
+        do {
+            let result = try await block()
+            network.reportSuccess()
+            return result
+        } catch {
+            network.reportFailure(error)
+            throw error
+        }
+    }
+
+    /// Void version.
+    private func apiCallVoid(_ block: () async throws -> Void) async throws {
+        do {
+            try await block()
+            network.reportSuccess()
+        } catch {
+            network.reportFailure(error)
+            throw error
+        }
+    }
+
     // MARK: - Input Items
 
     func fetchItems(date: String) async -> [InputItem] {
         if network.isConnected {
             do {
-                let items = try await api.fetchItems(date: date)
+                let items = try await apiCall { try await self.api.fetchItems(date: date) }
                 cache.cacheItems(items, for: date)
                 return items
             } catch {
@@ -31,7 +56,7 @@ final class DataRepository {
         if network.isConnected {
             do {
                 let request = InputItemCreateRequest(type: type, content: content, date: date, importance: 5)
-                let item = try await api.createItem(request)
+                let item = try await apiCall { try await self.api.createItem(request) }
                 cache.cacheItem(item)
                 return item
             } catch {
@@ -47,7 +72,7 @@ final class DataRepository {
         cache.updateCachedItem(id: id, content: content)
         if network.isConnected {
             do {
-                let updated = try await api.updateItem(id: id, content: content)
+                let updated = try await apiCall { try await self.api.updateItem(id: id, content: content) }
                 cache.cacheItem(updated)
                 return
             } catch {
@@ -61,7 +86,7 @@ final class DataRepository {
         cache.deleteCachedItem(id: id)
         if network.isConnected {
             do {
-                try await api.deleteItem(id: id)
+                try await apiCallVoid { try await self.api.deleteItem(id: id) }
                 return
             } catch {
                 // Fallback to enqueue
@@ -74,7 +99,7 @@ final class DataRepository {
         cache.clearCachedDay(date: date)
         if network.isConnected {
             do {
-                try await api.clearDay(date: date)
+                try await apiCallVoid { try await self.api.clearDay(date: date) }
                 return
             } catch {
                 // Fallback to enqueue
@@ -87,9 +112,13 @@ final class DataRepository {
 
     func uploadImage(imageData: Data, date: String, filename: String) async throws -> InputItem {
         if network.isConnected {
-            let item = try await api.uploadImage(imageData: imageData, date: date, filename: filename)
-            cache.cacheItem(item)
-            return item
+            do {
+                let item = try await apiCall { try await self.api.uploadImage(imageData: imageData, date: date, filename: filename) }
+                cache.cacheItem(item)
+                return item
+            } catch {
+                // Fallback to local placeholder
+            }
         }
         // Offline: create local placeholder and enqueue
         let localItem = cache.createLocalItem(type: .image, content: "[Image pending upload]", date: date)
@@ -104,7 +133,7 @@ final class DataRepository {
         if let search, !search.isEmpty {
             if network.isConnected {
                 do {
-                    let response = try await api.fetchDays(search: search)
+                    let response = try await apiCall { try await self.api.fetchDays(search: search) }
                     return response.items
                 } catch {
                     return []
@@ -115,7 +144,7 @@ final class DataRepository {
 
         if network.isConnected {
             do {
-                let response = try await api.fetchDays()
+                let response = try await apiCall { try await self.api.fetchDays() }
                 cache.cacheDaySummaries(response.items)
                 return response.items
             } catch {
@@ -128,7 +157,7 @@ final class DataRepository {
     func fetchDay(date: String) async -> DayResponse {
         if network.isConnected {
             do {
-                let response = try await api.fetchDay(date: date)
+                let response = try await apiCall { try await self.api.fetchDay(date: date) }
                 cache.cacheItems(response.inputItems, for: date)
                 cache.cacheGenerations(response.generations, for: date)
                 return response
@@ -145,7 +174,7 @@ final class DataRepository {
         guard network.isConnected else {
             throw OfflineError.requiresNetwork("You're offline. Connect to generate content.")
         }
-        let generation = try await api.generate(date: date)
+        let generation = try await apiCall { try await self.api.generate(date: date) }
         // Cache the new generation
         var existing = cache.getCachedGenerations(date: date)
         existing.append(generation)
@@ -157,7 +186,7 @@ final class DataRepository {
         guard network.isConnected else {
             throw OfflineError.requiresNetwork("You're offline. Connect to regenerate content.")
         }
-        let generation = try await api.regenerate(generationId: generationId, channels: channels)
+        let generation = try await apiCall { try await self.api.regenerate(generationId: generationId, channels: channels) }
         var existing = cache.getCachedGenerations(date: date)
         existing.append(generation)
         cache.cacheGenerations(existing, for: date)
@@ -170,21 +199,21 @@ final class DataRepository {
         guard network.isConnected else {
             throw OfflineError.requiresNetwork("You're offline. Connect to publish.")
         }
-        return try await api.publishPost(resultId: resultId)
+        return try await apiCall { try await self.api.publishPost(resultId: resultId) }
     }
 
     func unpublishPost(postId: String) async throws {
         guard network.isConnected else {
             throw OfflineError.requiresNetwork("You're offline. Connect to unpublish.")
         }
-        try await api.unpublishPost(postId: postId)
+        try await apiCallVoid { try await self.api.unpublishPost(postId: postId) }
     }
 
     func getPublishStatus(resultIds: [String]) async throws -> PublishStatusResponse {
         guard network.isConnected else {
             throw OfflineError.requiresNetwork("Publish status unavailable offline.")
         }
-        return try await api.getPublishStatus(resultIds: resultIds)
+        return try await apiCall { try await self.api.getPublishStatus(resultIds: resultIds) }
     }
 
     // MARK: - Channel Settings
@@ -192,7 +221,7 @@ final class DataRepository {
     func fetchChannelSettings() async -> [ChannelSetting] {
         if network.isConnected {
             do {
-                let settings = try await api.fetchChannelSettings()
+                let settings = try await apiCall { try await self.api.fetchChannelSettings() }
                 cache.cacheChannelSettings(settings)
                 return settings
             } catch {
@@ -206,7 +235,7 @@ final class DataRepository {
         cache.cacheChannelSettings(settings)
         if network.isConnected {
             do {
-                try await api.saveChannelSettings(settings)
+                try await apiCallVoid { try await self.api.saveChannelSettings(settings) }
                 return
             } catch {
                 // Fallback to enqueue
@@ -223,7 +252,7 @@ final class DataRepository {
 
         if network.isConnected {
             do {
-                let updated = try await api.updateItemFields(id: id, importance: importance)
+                let updated = try await apiCall { try await self.api.updateItemFields(id: id, importance: importance) }
                 cache.cacheItem(updated)
             } catch {
                 // Network failed — already cached locally, enqueue for sync
@@ -241,7 +270,7 @@ final class DataRepository {
 
         if network.isConnected {
             do {
-                let updated = try await api.updateItemFields(id: id, includeInGeneration: include)
+                let updated = try await apiCall { try await self.api.updateItemFields(id: id, includeInGeneration: include) }
                 cache.cacheItem(updated)
             } catch {
                 sync.enqueueUpdateFields(id: id, includeInGeneration: include)
@@ -257,12 +286,12 @@ final class DataRepository {
         guard network.isConnected else {
             throw OfflineError.requiresNetwork("You're offline. Connect to publish.")
         }
-        return try await api.publishInputItem(inputItemId: inputItemId)
+        return try await apiCall { try await self.api.publishInputItem(inputItemId: inputItemId) }
     }
 
     func getInputPublishStatus(inputIds: [String]) async throws -> [String: String] {
         guard network.isConnected else { return [:] }
-        let response = try await api.getInputPublishStatus(inputIds: inputIds)
+        let response = try await apiCall { try await self.api.getInputPublishStatus(inputIds: inputIds) }
         var map: [String: String] = [:]
         for (inputId, postId) in response.statuses {
             if let postId { map[inputId] = postId }
@@ -276,14 +305,14 @@ final class DataRepository {
         guard network.isConnected else {
             throw OfflineError.requiresNetwork("Settings unavailable offline.")
         }
-        return try await api.getGenerationSettings()
+        return try await apiCall { try await self.api.getGenerationSettings() }
     }
 
     func saveGenerationSettings(_ settings: GenerationSettingsRequest) async throws -> GenerationSettingsResponse {
         guard network.isConnected else {
             throw OfflineError.requiresNetwork("You're offline. Connect to save settings.")
         }
-        return try await api.saveGenerationSettings(settings)
+        return try await apiCall { try await self.api.saveGenerationSettings(settings) }
     }
 
     // MARK: - Export
@@ -292,17 +321,54 @@ final class DataRepository {
         guard network.isConnected else {
             throw OfflineError.requiresNetwork("Export unavailable offline.")
         }
-        return try await api.exportDay(date: date)
+        return try await apiCall { try await self.api.exportDay(date: date) }
     }
 
-    // MARK: - Public Feed (passthrough, no caching)
+    // MARK: - Public Feed (with caching for offline)
 
     func fetchPublicPosts(cursor: String? = nil, limit: Int = 10, channel: String? = nil) async throws -> PublicPostListResponse {
-        try await api.fetchPublicPosts(cursor: cursor, limit: limit, channel: channel)
+        if network.isConnected {
+            do {
+                let response = try await apiCall {
+                    try await self.api.fetchPublicPosts(cursor: cursor, limit: limit, channel: channel)
+                }
+                // Cache first page (no cursor) for offline viewing
+                if cursor == nil {
+                    cache.cacheBlogPosts(response.items, replace: true)
+                } else {
+                    cache.cacheBlogPosts(response.items, replace: false)
+                }
+                return response
+            } catch {
+                // Fallback to cached posts
+                let cached = cache.getCachedBlogPosts(channel: channel)
+                return PublicPostListResponse(items: cached, cursor: nil, hasMore: false)
+            }
+        }
+        // Offline: return cached posts
+        let cached = cache.getCachedBlogPosts(channel: channel)
+        return PublicPostListResponse(items: cached, cursor: nil, hasMore: false)
     }
 
     func fetchPublicPost(slug: String) async throws -> PublishedPostResponse {
-        try await api.fetchPublicPost(slug: slug)
+        if network.isConnected {
+            do {
+                let post = try await apiCall { try await self.api.fetchPublicPost(slug: slug) }
+                cache.cacheBlogPost(post)
+                return post
+            } catch {
+                // Try cache
+                if let cached = cache.getCachedBlogPost(slug: slug) {
+                    return cached
+                }
+                throw error
+            }
+        }
+        // Offline: return from cache
+        if let cached = cache.getCachedBlogPost(slug: slug) {
+            return cached
+        }
+        throw OfflineError.requiresNetwork("This post is not available offline.")
     }
 
     // MARK: - Private
@@ -313,4 +379,3 @@ final class DataRepository {
         return DayResponse(date: date, inputItems: items, generations: generations)
     }
 }
-

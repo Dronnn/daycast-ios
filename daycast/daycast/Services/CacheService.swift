@@ -156,6 +156,54 @@ final class CacheService {
         trySave(ctx)
     }
 
+    // MARK: - Blog Posts
+
+    func getCachedBlogPosts(channel: String? = nil) -> [PublishedPostResponse] {
+        guard let ctx = modelContext else { return [] }
+        let descriptor: FetchDescriptor<CachedBlogPost>
+        if let channel {
+            let predicate = #Predicate<CachedBlogPost> { $0.channelId == channel }
+            descriptor = FetchDescriptor(predicate: predicate, sortBy: [SortDescriptor(\.publishedAt, order: .reverse)])
+        } else {
+            descriptor = FetchDescriptor(sortBy: [SortDescriptor(\.publishedAt, order: .reverse)])
+        }
+        return (try? ctx.fetch(descriptor))?.map { $0.toApiModel() } ?? []
+    }
+
+    func getCachedBlogPost(slug: String) -> PublishedPostResponse? {
+        guard let ctx = modelContext else { return nil }
+        let predicate = #Predicate<CachedBlogPost> { $0.slug == slug }
+        return (try? ctx.fetch(FetchDescriptor(predicate: predicate)))?.first?.toApiModel()
+    }
+
+    func cacheBlogPosts(_ posts: [PublishedPostResponse], replace: Bool) {
+        guard let ctx = modelContext else { return }
+        if replace {
+            try? ctx.delete(model: CachedBlogPost.self)
+        }
+        for post in posts {
+            // Upsert: remove existing with same slug
+            let slug = post.slug
+            let predicate = #Predicate<CachedBlogPost> { $0.slug == slug }
+            if let existing = try? ctx.fetch(FetchDescriptor(predicate: predicate)).first {
+                ctx.delete(existing)
+            }
+            ctx.insert(CachedBlogPost(from: post))
+        }
+        trySave(ctx)
+    }
+
+    func cacheBlogPost(_ post: PublishedPostResponse) {
+        guard let ctx = modelContext else { return }
+        let slug = post.slug
+        let predicate = #Predicate<CachedBlogPost> { $0.slug == slug }
+        if let existing = try? ctx.fetch(FetchDescriptor(predicate: predicate)).first {
+            ctx.delete(existing)
+        }
+        ctx.insert(CachedBlogPost(from: post))
+        trySave(ctx)
+    }
+
     // MARK: - Local Item Creation
 
     func createLocalItem(type: InputItemType, content: String, date: String) -> InputItem {

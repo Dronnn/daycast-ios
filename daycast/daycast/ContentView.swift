@@ -28,8 +28,10 @@ struct ContentView: View {
             .overlay(alignment: .top) {
                 if !network.isConnected {
                     HStack(spacing: 8) {
-                        Image(systemName: "wifi.slash")
-                        Text("Offline — showing cached data")
+                        Image(systemName: network.hasNetwork ? "server.rack" : "wifi.slash")
+                        Text(network.hasNetwork
+                             ? "Server unavailable — offline mode"
+                             : "No internet — offline mode")
                     }
                     .font(.system(size: 13, weight: .semibold))
                     .foregroundStyle(.white)
