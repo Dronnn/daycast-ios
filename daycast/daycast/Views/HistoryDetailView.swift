@@ -66,6 +66,7 @@ struct HistoryDetailView: View {
                     Button("Retry") {
                         Task { await viewModel.fetchDay() }
                     }
+                    .buttonStyle(.dcScale)
                 }
             } else {
                 contentList
@@ -95,8 +96,9 @@ struct HistoryDetailView: View {
         let items = viewModel.inputItems
         if !items.isEmpty {
             Section {
-                ForEach(items) { item in
+                ForEach(Array(items.enumerated()), id: \.element.id) { index, item in
                     InputItemRow(item: item, viewModel: viewModel)
+                        .dcScrollReveal(index: index)
                 }
             } header: {
                 sectionHeader(title: "Messages", count: items.count)
@@ -117,6 +119,7 @@ struct HistoryDetailView: View {
                         number: index + 1,
                         viewModel: viewModel
                     )
+                    .dcScrollReveal(index: index)
                 }
             } header: {
                 sectionHeader(title: "Generations", count: gens.count)
@@ -164,7 +167,7 @@ private struct InputItemRow: View {
                 imageContent
             }
 
-            // Importance flames
+            // Importance flames with animation
             if let importance = item.importance, importance > 0 {
                 let sizes: [CGFloat] = [8, 11, 14, 17, 20]
                 let flameColor = Color(red: 1.0, green: 0.42, blue: 0.21)
@@ -207,6 +210,7 @@ private struct InputItemRow: View {
             if let edits = item.edits, !edits.isEmpty,
                viewModel.isEditHistoryExpanded(for: item.id) {
                 editHistoryView(edits: edits)
+                    .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
             }
         }
         .padding(.vertical, 4)
@@ -262,7 +266,7 @@ private struct InputItemRow: View {
     private var imageContent: some View {
         AuthenticatedImageView(path: item.content, itemId: item.id)
             .frame(maxHeight: 200)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     // MARK: - Badge
@@ -433,7 +437,7 @@ private struct GenerationResultCard: View {
         }
         .padding(12)
         .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 }
 

@@ -18,6 +18,7 @@ struct HistoryView: View {
                         Button("Retry") {
                             Task { await viewModel.fetchDays() }
                         }
+                        .buttonStyle(.dcScale)
                     }
                 } else if viewModel.days.isEmpty {
                     ContentUnavailableView {
@@ -44,12 +45,13 @@ struct HistoryView: View {
 
     private var daysList: some View {
         List {
-            ForEach(viewModel.groupedDays, id: \.month) { group in
+            ForEach(Array(viewModel.groupedDays.enumerated()), id: \.element.month) { groupIndex, group in
                 Section {
-                    ForEach(group.days) { day in
+                    ForEach(Array(group.days.enumerated()), id: \.element.id) { dayIndex, day in
                         NavigationLink(value: day) {
                             DayRow(day: day)
                         }
+                        .dcScrollReveal(index: groupIndex * 10 + dayIndex)
                     }
                 } header: {
                     Text(group.month)

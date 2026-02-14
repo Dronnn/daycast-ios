@@ -11,94 +11,100 @@ struct LoginView: View {
     private enum Field { case username, password }
 
     var body: some View {
-        ScrollView {
-            VStack(spacing: 32) {
-                Spacer().frame(height: 80)
+        ZStack {
+            // Animated gradient mesh background
+            GradientMeshBackground()
 
-                // Logo
-                VStack(spacing: 12) {
-                    Image(systemName: "bolt.fill")
-                        .font(.system(size: 32, weight: .bold))
-                        .foregroundStyle(.white)
-                        .frame(width: 64, height: 64)
-                        .background(
-                            LinearGradient(
-                                colors: [.dcBlue, .dcPurple],
-                                startPoint: .topLeading,
-                                endPoint: .bottomTrailing
+            ScrollView {
+                VStack(spacing: 32) {
+                    Spacer().frame(height: 80)
+
+                    // Logo
+                    VStack(spacing: 12) {
+                        Image(systemName: "bolt.fill")
+                            .font(.system(size: 32, weight: .bold))
+                            .foregroundStyle(.white)
+                            .frame(width: 64, height: 64)
+                            .background(
+                                LinearGradient.dcAccent
                             )
-                        )
-                        .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .clipShape(RoundedRectangle(cornerRadius: 16))
+                            .shadow(color: .dcBlue.opacity(0.4), radius: 20, y: 8)
 
-                    Text("DayCast")
-                        .font(.title.bold())
-                }
-
-                // Form
-                VStack(spacing: 12) {
-                    TextField("Username", text: $username)
-                        .textContentType(.username)
-                        .autocorrectionDisabled()
-                        .textInputAutocapitalization(.never)
-                        .focused($focusedField, equals: .username)
-                        .padding(14)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .submitLabel(.next)
-                        .onSubmit { focusedField = .password }
-
-                    SecureField("Password", text: $password)
-                        .textContentType(.password)
-                        .focused($focusedField, equals: .password)
-                        .padding(14)
-                        .background(Color(.systemGray6))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                        .submitLabel(.go)
-                        .onSubmit { submit(action: "login") }
-                }
-
-                // Buttons
-                VStack(spacing: 10) {
-                    Button {
-                        submit(action: "login")
-                    } label: {
-                        ZStack {
-                            if isLoading {
-                                ProgressView()
-                                    .tint(.white)
-                            } else {
-                                Text("Log in")
-                                    .font(.body.weight(.semibold))
-                            }
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(14)
-                        .background(Color.dcBlue)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
+                        Text("DayCast")
+                            .font(.dcHeading(34, weight: .heavy))
                     }
-                    .disabled(isLoading || !isFormValid)
 
-                    Button {
-                        submit(action: "register")
-                    } label: {
-                        Text("Register")
-                            .font(.body.weight(.semibold))
+                    // Form
+                    VStack(spacing: 12) {
+                        TextField("Username", text: $username)
+                            .textContentType(.username)
+                            .autocorrectionDisabled()
+                            .textInputAutocapitalization(.never)
+                            .focused($focusedField, equals: .username)
+                            .padding(14)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .dcInputFocus(focusedField == .username)
+                            .submitLabel(.next)
+                            .onSubmit { focusedField = .password }
+
+                        SecureField("Password", text: $password)
+                            .textContentType(.password)
+                            .focused($focusedField, equals: .password)
+                            .padding(14)
+                            .background(Color(.systemGray6))
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .dcInputFocus(focusedField == .password)
+                            .submitLabel(.go)
+                            .onSubmit { submit(action: "login") }
+                    }
+
+                    // Buttons
+                    VStack(spacing: 10) {
+                        Button {
+                            submit(action: "login")
+                        } label: {
+                            ZStack {
+                                if isLoading {
+                                    ProgressView()
+                                        .tint(.white)
+                                } else {
+                                    Text("Log in")
+                                        .font(.body.weight(.semibold))
+                                }
+                            }
                             .frame(maxWidth: .infinity)
                             .padding(14)
-                            .background(Color(.systemGray5))
-                            .foregroundStyle(.primary)
+                            .background(LinearGradient.dcAccent)
+                            .foregroundStyle(.white)
                             .clipShape(RoundedRectangle(cornerRadius: 14))
-                    }
-                    .disabled(isLoading || !isFormValid)
-                }
+                        }
+                        .buttonStyle(.dcScale)
+                        .disabled(isLoading || !isFormValid)
 
-                Spacer().frame(height: 40)
+                        Button {
+                            submit(action: "register")
+                        } label: {
+                            Text("Register")
+                                .font(.body.weight(.semibold))
+                                .frame(maxWidth: .infinity)
+                                .padding(14)
+                                .background(Color(.systemGray5))
+                                .foregroundStyle(.primary)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                        }
+                        .buttonStyle(.dcScale)
+                        .disabled(isLoading || !isFormValid)
+                    }
+
+                    Spacer().frame(height: 40)
+                }
+                .padding(.horizontal, 32)
             }
-            .padding(.horizontal, 32)
+            .scrollDismissesKeyboard(.interactively)
+            .onTapGesture { focusedField = nil }
         }
-        .scrollDismissesKeyboard(.interactively)
-        .onTapGesture { focusedField = nil }
         .alert("Error", isPresented: .init(
             get: { error != nil },
             set: { if !$0 { error = nil } }

@@ -26,6 +26,7 @@ struct ChannelsView: View {
                 }
 
                 Toggle("Separate business & personal events", isOn: $viewModel.separateBusinessPersonal)
+                    .tint(.dcBlue)
                     .onChange(of: viewModel.separateBusinessPersonal) {
                         viewModel.autoSaveGenSettings()
                     }
@@ -51,7 +52,7 @@ struct ChannelsView: View {
                     .transition(.move(edge: .bottom).combined(with: .opacity))
             }
         }
-        .animation(.easeInOut(duration: 0.3), value: viewModel.showSaved)
+        .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.showSaved)
         .task {
             await viewModel.loadSettings()
         }
@@ -113,6 +114,7 @@ struct ChannelsView: View {
             HStack(spacing: 12) {
                 ChannelIconView(channel: channel, size: 48)
                     .opacity(isActive ? 1 : 0.4)
+                    .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isActive)
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(channel.name)
@@ -122,6 +124,7 @@ struct ChannelsView: View {
                         .foregroundStyle(.secondary)
                 }
                 .opacity(isActive ? 1 : 0.5)
+                .animation(.easeInOut(duration: 0.2), value: isActive)
 
                 Spacer()
 
@@ -132,6 +135,7 @@ struct ChannelsView: View {
                     }
                 ))
                 .labelsHidden()
+                .tint(.dcBlue)
             }
 
             if isActive {

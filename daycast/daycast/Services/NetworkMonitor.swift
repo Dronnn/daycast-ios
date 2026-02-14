@@ -93,19 +93,18 @@ final class NetworkMonitor {
     }
 
     private func pingServer() async {
+        // /health is at root level, not under /api/v1
         let base = APIService.shared.baseURL
-        guard let url = URL(string: "\(base)/days") else { return }
+        let rootURL = base.replacingOccurrences(of: "/api/v1", with: "")
+        guard let url = URL(string: "\(rootURL)/health") else { return }
 
         var req = URLRequest(url: url)
         req.httpMethod = "GET"
         req.timeoutInterval = 5
-        if let token = APIService.shared.getToken() {
-            req.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
-        }
 
         do {
             let (_, response) = try await URLSession.shared.data(for: req)
-            if let http = response as? HTTPURLResponse, (200..<500).contains(http.statusCode) {
+            if let http = response as? HTTPURLResponse, http.statusCode == 200 {
                 // Server responded — mark reachable
                 isServerReachable = true
                 stopHealthCheck()
@@ -117,7 +116,7 @@ final class NetworkMonitor {
 
     // MARK: - Error Classification
 
-    private func isNetworkLevelError(_ error: Error) -> Bool {
+    func isNetworkLevelError(_ error: Error) -> Bool {
         // Direct URLError from URLSession
         if let urlError = error as? URLError {
             switch urlError.code {
@@ -138,11 +137,6 @@ final class NetworkMonitor {
         // APIServiceError.networkError wraps an underlying error
         if case APIServiceError.networkError(let inner) = error {
             return isNetworkLevelError(inner)
-        }
-        // NSError with NSURLErrorDomain
-        let nsError = error as NSError
-        if nsError.domain == NSURLErrorDomain {
-            return true
         }
         return false
     }

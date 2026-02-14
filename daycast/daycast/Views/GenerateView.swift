@@ -59,29 +59,23 @@ struct GenerateView: View {
             // Hero title
             VStack(spacing: 8) {
                 Text("Turn your day into")
-                    .font(.system(size: 40, weight: .black))
+                    .font(.dcHeading(40, weight: .heavy))
                     .tracking(-2)
                 Text("content.")
-                    .font(.system(size: 40, weight: .black))
+                    .font(.dcHeading(40, weight: .heavy))
                     .tracking(-2)
-                    .foregroundStyle(
-                        LinearGradient(
-                            colors: [Color(hex: "#0071e3"), Color(hex: "#5856d6"), Color(hex: "#bf5af2")],
-                            startPoint: .leading,
-                            endPoint: .trailing
-                        )
-                    )
+                    .foregroundStyle(LinearGradient.dcAccentWide)
             }
             .multilineTextAlignment(.center)
 
             // Description
             Text("Generate tailored content for all your channels from today's inputs.")
-                .font(.system(size: 17))
+                .font(.dcBody(17))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 340)
 
-            // Generate button
+            // Generate button with pulsing glow
             Button {
                 Task { await vm.generate() }
             } label: {
@@ -97,17 +91,13 @@ struct GenerateView: View {
                     }
                 }
                 .frame(width: 88, height: 88)
-                .background(
-                    LinearGradient(
-                        colors: [Color(hex: "#0071e3"), Color(hex: "#5856d6"), Color(hex: "#bf5af2")],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    )
-                )
+                .background(LinearGradient.dcAccentWide)
                 .clipShape(Circle())
                 .shadow(color: Color(hex: "#0071e3").opacity(0.3), radius: 15, y: 6)
                 .shadow(color: Color(hex: "#5856d6").opacity(0.15), radius: 25, y: 12)
             }
+            .buttonStyle(.dcScale)
+            .dcPulsingGlow(color: .dcBlue, radius: 30)
             .disabled(vm.isGenerating || vm.activeItemCount == 0)
             .scaleEffect(vm.isGenerating ? 0.95 : 1.0)
             .animation(.easeInOut(duration: 0.3), value: vm.isGenerating)
@@ -139,8 +129,9 @@ struct GenerateView: View {
                         resultCard(result)
                             .opacity(appearAnimated ? 1 : 0)
                             .offset(y: appearAnimated ? 0 : 24)
+                            .scaleEffect(appearAnimated ? 1 : 0.95)
                             .animation(
-                                .easeOut(duration: 0.5).delay(Double(index) * 0.08),
+                                .spring(response: 0.5, dampingFraction: 0.8).delay(Double(index) * 0.08),
                                 value: appearAnimated
                             )
                     }
@@ -185,6 +176,7 @@ struct GenerateView: View {
                     .background(Color.dcBlueBg)
                     .clipShape(Capsule())
                 }
+                .buttonStyle(.dcScale)
                 .padding(.top, 8)
             }
         }
@@ -237,7 +229,7 @@ struct GenerateView: View {
                             .foregroundStyle(.secondary)
                     }
                     Text("Your Content")
-                        .font(.system(size: 32, weight: .heavy))
+                        .font(.dcHeading(32, weight: .heavy))
                         .tracking(-1.3)
                 }
 
@@ -255,10 +247,11 @@ struct GenerateView: View {
                     .foregroundStyle(.primary)
                     .padding(.horizontal, 18)
                     .padding(.vertical, 10)
-                    .background(.regularMaterial)
+                    .background(.ultraThinMaterial)
                     .clipShape(Capsule())
-                    .shadow(color: .black.opacity(0.06), radius: 10, y: 3)
+                    .shadow(color: .black.opacity(0.04), radius: 16, y: 4)
                 }
+                .buttonStyle(.dcScale)
                 .disabled(vm.isGenerating)
             }
 
@@ -279,7 +272,7 @@ struct GenerateView: View {
     private var sourceSection: some View {
         VStack(spacing: 12) {
             Button {
-                withAnimation(.easeInOut(duration: 0.3)) {
+                withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                     vm.showSource.toggle()
                 }
             } label: {
@@ -294,8 +287,9 @@ struct GenerateView: View {
 
             if vm.showSource {
                 VStack(spacing: 8) {
-                    ForEach(vm.items.filter { !$0.cleared && $0.includeInGeneration }) { item in
+                    ForEach(Array(vm.items.filter { !$0.cleared && $0.includeInGeneration }.enumerated()), id: \.element.id) { index, item in
                         sourceItemRow(item)
+                            .dcScrollReveal(index: index)
                     }
                 }
                 .transition(.opacity.combined(with: .move(edge: .top)))
@@ -322,8 +316,7 @@ struct GenerateView: View {
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .dcCard()
     }
 
     // MARK: - Result Card
@@ -377,10 +370,11 @@ struct GenerateView: View {
                         .foregroundStyle(.white)
                         .padding(.horizontal, 14)
                         .padding(.vertical, 8)
-                        .background(Color.dcBlue)
+                        .background(LinearGradient.dcAccent)
                         .clipShape(Capsule())
                         .fixedSize()
                     }
+                    .buttonStyle(.dcScale)
 
                     // Regenerate button
                     Button {
@@ -399,6 +393,7 @@ struct GenerateView: View {
                         .clipShape(Capsule())
                         .fixedSize()
                     }
+                    .buttonStyle(.dcScale)
                 }
 
                 HStack(spacing: 8) {
@@ -429,6 +424,7 @@ struct GenerateView: View {
                                 .clipShape(Capsule())
                                 .fixedSize()
                         }
+                        .buttonStyle(.dcScale)
                     } else {
                         Button {
                             Task { await vm.publishPost(resultId: result.id) }
@@ -446,6 +442,7 @@ struct GenerateView: View {
                             .clipShape(Capsule())
                             .fixedSize()
                         }
+                        .buttonStyle(.dcScale)
                         .disabled(vm.isPublishing)
                     }
                 }
@@ -453,11 +450,7 @@ struct GenerateView: View {
             .padding(.horizontal, 24)
             .padding(.bottom, 20)
         }
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: .black.opacity(0.04), radius: 1, y: 1)
-        .shadow(color: .black.opacity(0.06), radius: 5, y: 3)
-        .shadow(color: .black.opacity(0.06), radius: 18, y: 12)
+        .dcCard()
     }
 
     // MARK: - Skeleton Card
@@ -500,8 +493,7 @@ struct GenerateView: View {
             }
         }
         .padding(24)
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 24))
+        .dcCard()
     }
 
     // MARK: - Loading Placeholder

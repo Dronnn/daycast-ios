@@ -54,11 +54,12 @@ struct BlogView: View {
                             .padding(.vertical, 9)
                             .background(
                                 vm.selectedChannel == channel.id
-                                    ? AnyShapeStyle(Color.dcBlue)
+                                    ? AnyShapeStyle(LinearGradient.dcAccent)
                                     : AnyShapeStyle(Color(.tertiarySystemFill))
                             )
                             .clipShape(Capsule())
                     }
+                    .buttonStyle(.dcScale)
                 }
             }
             .padding(.horizontal, 4)
@@ -69,11 +70,12 @@ struct BlogView: View {
 
     private var postList: some View {
         LazyVStack(spacing: 16) {
-            ForEach(vm.posts) { post in
+            ForEach(Array(vm.posts.enumerated()), id: \.element.id) { index, post in
                 NavigationLink(value: post) {
                     postCard(post)
                 }
                 .buttonStyle(.plain)
+                .dcScrollReveal(index: index)
             }
 
             // Infinite scroll sentinel
@@ -138,11 +140,7 @@ struct BlogView: View {
             .padding(.horizontal, 20)
             .padding(.bottom, 18)
         }
-        .background(Color(.secondarySystemGroupedBackground))
-        .clipShape(RoundedRectangle(cornerRadius: 24))
-        .shadow(color: .black.opacity(0.04), radius: 1, y: 1)
-        .shadow(color: .black.opacity(0.06), radius: 5, y: 3)
-        .shadow(color: .black.opacity(0.06), radius: 18, y: 12)
+        .dcCard()
     }
 
     private func badgePill(_ text: String) -> some View {
@@ -185,8 +183,7 @@ struct BlogView: View {
                     }
                 }
                 .padding(20)
-                .background(Color(.secondarySystemGroupedBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 24))
+                .dcCard()
             }
         }
     }
@@ -200,7 +197,7 @@ struct BlogView: View {
                 .font(.system(size: 40))
                 .foregroundStyle(.tertiary)
             Text("No published posts yet")
-                .font(.system(size: 17, weight: .semibold))
+                .font(.dcHeading(20, weight: .bold))
                 .foregroundStyle(.secondary)
             Spacer().frame(height: 80)
         }

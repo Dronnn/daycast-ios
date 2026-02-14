@@ -11,19 +11,31 @@ struct FlameRatingView: View {
     private let sizes: [CGFloat] = [8, 11, 14, 17, 20]
     private let flameColor = Color(red: 1.0, green: 0.42, blue: 0.21)
 
+    @State private var animatedRating: Int? = nil
+
     var body: some View {
         HStack(spacing: 2) {
             ForEach(1...5, id: \.self) { n in
                 Button {
-                    onRate(rating == n ? nil : n)
+                    let newRating = rating == n ? nil : n
+                    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+                        animatedRating = newRating
+                    }
+                    onRate(newRating)
                 } label: {
                     Image(systemName: "flame.fill")
                         .font(.system(size: sizes[n - 1]))
                         .foregroundStyle(flameColor)
                         .opacity((rating ?? 0) >= n ? 1.0 : 0.25)
+                        .scaleEffect((animatedRating ?? 0) >= n && animatedRating != rating ? 1.3 : 1.0)
+                        .animation(.spring(response: 0.3, dampingFraction: 0.5), value: animatedRating)
                 }
                 .buttonStyle(.plain)
             }
+        }
+        .onAppear { animatedRating = rating }
+        .onChange(of: rating) { _, newValue in
+            animatedRating = newValue
         }
     }
 }
@@ -157,8 +169,9 @@ struct FeedView: View {
                     } else if viewModel.items.isEmpty && !viewModel.isLoading {
                         emptyState
                     } else {
-                        ForEach(viewModel.items) { item in
+                        ForEach(Array(viewModel.items.enumerated()), id: \.element.id) { index, item in
                             itemRow(item)
+                                .dcScrollReveal(index: index)
                         }
                     }
                     Color.clear.frame(height: 1).id("bottom")
@@ -192,8 +205,7 @@ struct FeedView: View {
                 .font(.system(size: 44))
                 .foregroundStyle(.tertiary)
             Text("No items yet")
-                .font(.title3)
-                .fontWeight(.medium)
+                .font(.dcHeading(22, weight: .bold))
                 .foregroundStyle(.secondary)
             Text("Add your first thought, link, or photo")
                 .font(.subheadline)
@@ -219,7 +231,7 @@ struct FeedView: View {
                     // Edit history badge + expansion
                     if let edits = item.edits, !edits.isEmpty {
                         Button {
-                            withAnimation {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
                                 if expandedEdits.contains(item.id) {
                                     expandedEdits.remove(item.id)
                                 } else {
@@ -256,6 +268,7 @@ struct FeedView: View {
                                 }
                             }
                             .padding(.top, 4)
+                            .transition(.opacity.combined(with: .scale(scale: 0.95, anchor: .top)))
                         }
                     }
                 }
@@ -344,8 +357,14 @@ struct FeedView: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .background(
-                item.includeInGeneration ? Color.dcBlue : Color(.systemGray5),
-                in: RoundedRectangle(cornerRadius: 18)
+                item.includeInGeneration
+                    ? AnyShapeStyle(LinearGradient(
+                        colors: [.dcBlue, .dcBlue.opacity(0.9)],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    ))
+                    : AnyShapeStyle(Color(.systemGray5)),
+                in: RoundedRectangle(cornerRadius: 20)
             )
             .textSelection(.enabled)
     }
@@ -403,7 +422,7 @@ struct FeedView: View {
         }
         .padding(12)
         .frame(maxWidth: 280, alignment: .leading)
-        .background(bgColor, in: RoundedRectangle(cornerRadius: 16))
+        .background(bgColor, in: RoundedRectangle(cornerRadius: 20))
         .textSelection(.enabled)
         .onTapGesture {
             if let parsed = URL(string: url) {
@@ -419,7 +438,7 @@ struct FeedView: View {
             fullscreenImage = uiImage
         }
         .frame(maxWidth: 240)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: 20))
     }
 
     // MARK: - Composer Bar
@@ -437,6 +456,7 @@ struct FeedView: View {
                         .foregroundStyle(Color.dcBlue)
                         .frame(height: 36)
                 }
+                .buttonStyle(.dcScale)
 
                 // Photo picker
                 PhotosPicker(
@@ -480,6 +500,7 @@ struct FeedView: View {
                         .foregroundStyle(sendButtonDisabled ? Color(.tertiaryLabel) : Color.dcBlue)
                         .frame(height: 36)
                 }
+                .buttonStyle(.dcScale)
                 .disabled(sendButtonDisabled)
             }
             .padding(.horizontal, 12)
@@ -676,7 +697,7 @@ struct AuthenticatedImageView: View {
         }
         .foregroundStyle(.secondary)
         .frame(width: 200, height: 150)
-        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 16))
+        .background(Color(.tertiarySystemFill), in: RoundedRectangle(cornerRadius: 20))
     }
 }
 

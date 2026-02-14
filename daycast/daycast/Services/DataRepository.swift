@@ -26,16 +26,6 @@ final class DataRepository {
         }
     }
 
-    /// Void version.
-    private func apiCallVoid(_ block: () async throws -> Void) async throws {
-        do {
-            try await block()
-            network.reportSuccess()
-        } catch {
-            network.reportFailure(error)
-            throw error
-        }
-    }
 
     // MARK: - Input Items
 
@@ -86,7 +76,7 @@ final class DataRepository {
         cache.deleteCachedItem(id: id)
         if network.isConnected {
             do {
-                try await apiCallVoid { try await self.api.deleteItem(id: id) }
+                _ = try await apiCall { try await self.api.deleteItem(id: id) }
                 return
             } catch {
                 // Fallback to enqueue
@@ -99,7 +89,7 @@ final class DataRepository {
         cache.clearCachedDay(date: date)
         if network.isConnected {
             do {
-                try await apiCallVoid { try await self.api.clearDay(date: date) }
+                _ = try await apiCall { try await self.api.clearDay(date: date) }
                 return
             } catch {
                 // Fallback to enqueue
@@ -206,7 +196,7 @@ final class DataRepository {
         guard network.isConnected else {
             throw OfflineError.requiresNetwork("You're offline. Connect to unpublish.")
         }
-        try await apiCallVoid { try await self.api.unpublishPost(postId: postId) }
+        _ = try await apiCall { try await self.api.unpublishPost(postId: postId) }
     }
 
     func getPublishStatus(resultIds: [String]) async throws -> PublishStatusResponse {
@@ -235,7 +225,7 @@ final class DataRepository {
         cache.cacheChannelSettings(settings)
         if network.isConnected {
             do {
-                try await apiCallVoid { try await self.api.saveChannelSettings(settings) }
+                _ = try await apiCall { try await self.api.saveChannelSettings(settings) }
                 return
             } catch {
                 // Fallback to enqueue
@@ -340,9 +330,12 @@ final class DataRepository {
                 }
                 return response
             } catch {
-                // Fallback to cached posts
-                let cached = cache.getCachedBlogPosts(channel: channel)
-                return PublicPostListResponse(items: cached, cursor: nil, hasMore: false)
+                // Only fall back to cache for network-level errors
+                if network.isNetworkLevelError(error) {
+                    let cached = cache.getCachedBlogPosts(channel: channel)
+                    return PublicPostListResponse(items: cached, cursor: nil, hasMore: false)
+                }
+                throw error
             }
         }
         // Offline: return cached posts

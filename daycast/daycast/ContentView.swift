@@ -24,7 +24,7 @@ struct ContentView: View {
                     BlogView()
                 }
             }
-            .tint(.blue)
+            .tint(.dcBlue)
             .overlay(alignment: .top) {
                 if !network.isConnected {
                     HStack(spacing: 8) {

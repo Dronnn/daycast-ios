@@ -180,15 +180,19 @@ final class CacheService {
         guard let ctx = modelContext else { return }
         if replace {
             try? ctx.delete(model: CachedBlogPost.self)
-        }
-        for post in posts {
-            // Upsert: remove existing with same slug
-            let slug = post.slug
-            let predicate = #Predicate<CachedBlogPost> { $0.slug == slug }
-            if let existing = try? ctx.fetch(FetchDescriptor(predicate: predicate)).first {
-                ctx.delete(existing)
+            for post in posts {
+                ctx.insert(CachedBlogPost(from: post))
             }
-            ctx.insert(CachedBlogPost(from: post))
+        } else {
+            for post in posts {
+                // Upsert: remove existing with same slug
+                let slug = post.slug
+                let predicate = #Predicate<CachedBlogPost> { $0.slug == slug }
+                if let existing = try? ctx.fetch(FetchDescriptor(predicate: predicate)).first {
+                    ctx.delete(existing)
+                }
+                ctx.insert(CachedBlogPost(from: post))
+            }
         }
         trySave(ctx)
     }
@@ -264,6 +268,13 @@ final class CacheService {
         let sumPredicate = #Predicate<CachedDaySummary> { $0.date < cutoffStr }
         if let old = try? ctx.fetch(FetchDescriptor(predicate: sumPredicate)) {
             for sum in old { ctx.delete(sum) }
+        }
+
+        // Evict old blog posts
+        let blogCutoff = cutoff
+        let blogPredicate = #Predicate<CachedBlogPost> { $0.cachedAt < blogCutoff }
+        if let old = try? ctx.fetch(FetchDescriptor(predicate: blogPredicate)) {
+            for post in old { ctx.delete(post) }
         }
 
         // Evict old cached images

@@ -1,6 +1,6 @@
 import SwiftUI
 
-// MARK: - Colors matching web design-spec.md
+// MARK: - Design V2 Color System
 
 extension Color {
     // Accent
@@ -9,6 +9,19 @@ extension Color {
     static let dcGreen = Color(hex: "#30d158")
     static let dcRed = Color(hex: "#ff453a")
     static let dcPurple = Color(hex: "#bf5af2")
+    static let dcOrange = Color(hex: "#FF9F0A")
+
+    // Dark mode specific
+    static let dcDarkBg = Color(hex: "#000000")
+    static let dcDarkCard = Color(hex: "#1C1C1E")
+    static let dcDarkTextPrimary = Color(hex: "#F5F5F7")
+    static let dcDarkTextSecondary = Color(hex: "#86868B")
+
+    // Light mode specific
+    static let dcLightBg = Color(hex: "#FFFFFF")
+    static let dcLightSection = Color(hex: "#FAFAF8")
+    static let dcLightTextPrimary = Color(hex: "#1D1D1F")
+    static let dcLightTextSecondary = Color(hex: "#86868B")
 
     // Channel gradients
     static let blogGrad1 = Color(hex: "#0071e3")
@@ -29,6 +42,245 @@ extension Color {
         let g = Double((rgbValue & 0x00FF00) >> 8) / 255.0
         let b = Double(rgbValue & 0x0000FF) / 255.0
         self.init(red: r, green: g, blue: b)
+    }
+}
+
+// MARK: - Accent Gradient
+
+extension LinearGradient {
+    static let dcAccent = LinearGradient(
+        colors: [.dcBlue, .dcPurple],
+        startPoint: .topLeading,
+        endPoint: .bottomTrailing
+    )
+
+    static let dcAccentWide = LinearGradient(
+        colors: [Color(hex: "#0071e3"), Color(hex: "#5856d6"), Color(hex: "#bf5af2")],
+        startPoint: .leading,
+        endPoint: .trailing
+    )
+}
+
+// MARK: - Design V2 Card Style
+
+struct DCCardModifier: ViewModifier {
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(colorScheme == .dark ? Color.dcDarkCard : Color(.secondarySystemGroupedBackground))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 22))
+            .shadow(color: .black.opacity(0.04), radius: 16, y: 4)
+    }
+}
+
+extension View {
+    func dcCard() -> some View {
+        modifier(DCCardModifier())
+    }
+}
+
+// MARK: - Interactive Card (scale on tap)
+
+struct DCInteractiveCardModifier: ViewModifier {
+    @State private var isPressed = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                RoundedRectangle(cornerRadius: 22)
+                    .fill(colorScheme == .dark ? Color.dcDarkCard : Color(.secondarySystemGroupedBackground))
+            )
+            .clipShape(RoundedRectangle(cornerRadius: 22))
+            .shadow(color: .black.opacity(0.04), radius: 16, y: 4)
+            .scaleEffect(isPressed ? 0.98 : 1.0)
+            .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isPressed)
+            .simultaneousGesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { _ in isPressed = true }
+                    .onEnded { _ in isPressed = false }
+            )
+    }
+}
+
+extension View {
+    func dcInteractiveCard() -> some View {
+        modifier(DCInteractiveCardModifier())
+    }
+}
+
+// MARK: - Scale Button Style
+
+struct DCScaleButtonStyle: ButtonStyle {
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .scaleEffect(configuration.isPressed ? 0.96 : 1.0)
+            .animation(.spring(response: 0.25, dampingFraction: 0.7), value: configuration.isPressed)
+    }
+}
+
+extension ButtonStyle where Self == DCScaleButtonStyle {
+    static var dcScale: DCScaleButtonStyle { DCScaleButtonStyle() }
+}
+
+// MARK: - Scroll-Triggered Reveal
+
+struct DCScrollRevealModifier: ViewModifier {
+    let index: Int
+    @State private var appeared = false
+
+    func body(content: Content) -> some View {
+        content
+            .opacity(appeared ? 1 : 0)
+            .offset(y: appeared ? 0 : 20)
+            .scaleEffect(appeared ? 1 : 0.95)
+            .animation(
+                .spring(response: 0.5, dampingFraction: 0.8)
+                .delay(Double(index) * 0.05),
+                value: appeared
+            )
+            .onAppear {
+                appeared = true
+            }
+    }
+}
+
+extension View {
+    func dcScrollReveal(index: Int) -> some View {
+        modifier(DCScrollRevealModifier(index: index))
+    }
+}
+
+// MARK: - Gradient Mesh Background
+
+struct GradientMeshBackground: View {
+    @State private var animateBlobs = false
+    @Environment(\.colorScheme) private var colorScheme
+
+    var body: some View {
+        GeometryReader { geo in
+            ZStack {
+                // Base color
+                (colorScheme == .dark ? Color.dcDarkBg : Color.dcLightBg)
+
+                // Blob 1 — blue
+                Circle()
+                    .fill(Color.dcBlue.opacity(colorScheme == .dark ? 0.15 : 0.06))
+                    .frame(width: geo.size.width * 0.7)
+                    .blur(radius: 80)
+                    .offset(
+                        x: animateBlobs ? -geo.size.width * 0.15 : geo.size.width * 0.15,
+                        y: animateBlobs ? -geo.size.height * 0.1 : geo.size.height * 0.15
+                    )
+
+                // Blob 2 — purple
+                Circle()
+                    .fill(Color.dcPurple.opacity(colorScheme == .dark ? 0.12 : 0.05))
+                    .frame(width: geo.size.width * 0.6)
+                    .blur(radius: 80)
+                    .offset(
+                        x: animateBlobs ? geo.size.width * 0.2 : -geo.size.width * 0.1,
+                        y: animateBlobs ? geo.size.height * 0.2 : -geo.size.height * 0.05
+                    )
+
+                // Blob 3 — orange (subtle)
+                Circle()
+                    .fill(Color.dcOrange.opacity(colorScheme == .dark ? 0.06 : 0.03))
+                    .frame(width: geo.size.width * 0.5)
+                    .blur(radius: 60)
+                    .offset(
+                        x: animateBlobs ? -geo.size.width * 0.05 : geo.size.width * 0.1,
+                        y: animateBlobs ? geo.size.height * 0.3 : geo.size.height * 0.1
+                    )
+            }
+            .onAppear {
+                withAnimation(
+                    .easeInOut(duration: 8)
+                    .repeatForever(autoreverses: true)
+                ) {
+                    animateBlobs = true
+                }
+            }
+        }
+        .ignoresSafeArea()
+    }
+}
+
+// MARK: - Pulsing Glow
+
+struct PulsingGlowModifier: ViewModifier {
+    let color: Color
+    let radius: CGFloat
+    @State private var isPulsing = false
+
+    func body(content: Content) -> some View {
+        content
+            .background(
+                Circle()
+                    .fill(color.opacity(0.3))
+                    .scaleEffect(isPulsing ? 1.3 : 1.0)
+                    .opacity(isPulsing ? 0.0 : 0.4)
+                    .animation(
+                        .easeInOut(duration: 2.0)
+                        .repeatForever(autoreverses: true),
+                        value: isPulsing
+                    )
+            )
+            .onAppear { isPulsing = true }
+    }
+}
+
+extension View {
+    func dcPulsingGlow(color: Color = .dcBlue, radius: CGFloat = 30) -> some View {
+        modifier(PulsingGlowModifier(color: color, radius: radius))
+    }
+}
+
+// MARK: - Input Focus Glow
+
+struct DCInputFocusModifier: ViewModifier {
+    let isFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(
+                RoundedRectangle(cornerRadius: 14)
+                    .stroke(
+                        isFocused
+                            ? LinearGradient.dcAccent
+                            : LinearGradient(colors: [.clear], startPoint: .leading, endPoint: .trailing),
+                        lineWidth: isFocused ? 2 : 0
+                    )
+            )
+            .shadow(
+                color: isFocused ? Color.dcBlue.opacity(0.25) : .clear,
+                radius: isFocused ? 8 : 0,
+                y: 0
+            )
+            .animation(.easeInOut(duration: 0.2), value: isFocused)
+    }
+}
+
+extension View {
+    func dcInputFocus(_ isFocused: Bool) -> some View {
+        modifier(DCInputFocusModifier(isFocused: isFocused))
+    }
+}
+
+// MARK: - Design V2 Typography Helpers
+
+extension Font {
+    static func dcHeading(_ size: CGFloat = 34, weight: Font.Weight = .bold) -> Font {
+        .system(size: size, weight: weight, design: .rounded)
+    }
+
+    static func dcBody(_ size: CGFloat = 17, weight: Font.Weight = .regular) -> Font {
+        .system(size: size, weight: weight)
     }
 }
 

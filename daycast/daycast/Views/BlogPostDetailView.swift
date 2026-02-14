@@ -45,6 +45,7 @@ struct BlogPostDetailView: View {
                     } label: {
                         Image(systemName: copied ? "checkmark" : "doc.on.doc")
                     }
+                    .animation(.easeInOut(duration: 0.2), value: copied)
                 }
             }
         }
@@ -66,7 +67,7 @@ struct BlogPostDetailView: View {
 
                     VStack(alignment: .leading, spacing: 4) {
                         Text(channel.name)
-                            .font(.system(size: 20, weight: .bold))
+                            .font(.dcHeading(20, weight: .bold))
                             .tracking(-0.5)
                         Text(formatPublishDate(post.publishedAt))
                             .font(.system(size: 14, weight: .medium))
@@ -86,7 +87,7 @@ struct BlogPostDetailView: View {
 
                 // Full text
                 Text(post.text)
-                    .font(.system(size: 17))
+                    .font(.dcBody(17))
                     .lineSpacing(8)
                     .frame(maxWidth: 600, alignment: .leading)
             }
