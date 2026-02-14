@@ -45,6 +45,7 @@ struct FeedView: View {
     @State private var showClearConfirmation = false
     @State private var fullscreenImage: UIImage?
     @State private var expandedEdits: Set<String> = []
+    @State private var editHistoryItem: InputItem?
     @State private var exportCopied = false
     @FocusState private var isComposerFocused: Bool
     @Environment(\.scenePhase) private var scenePhase
@@ -101,6 +102,11 @@ struct FeedView: View {
             }
             .sheet(item: $viewModel.editingItemId) { _ in
                 editSheet
+            }
+            .sheet(item: $editHistoryItem) { item in
+                EditHistorySheet(item: item)
+                    .presentationDetents([.medium, .large])
+                    .presentationDragIndicator(.visible)
             }
             .fullScreenCover(isPresented: $viewModel.showCamera) {
                 CameraView { image in
@@ -302,6 +308,13 @@ struct FeedView: View {
                                 isPublished ? "Unpublish" : "Publish",
                                 systemImage: isPublished ? "arrow.down.square" : "arrow.up.right.square"
                             )
+                        }
+                    }
+                    if let edits = item.edits, !edits.isEmpty {
+                        Button {
+                            editHistoryItem = item
+                        } label: {
+                            Label("Edit History (\(edits.count))", systemImage: "clock.arrow.circlepath")
                         }
                     }
                     Button(role: .destructive) {
@@ -763,6 +776,59 @@ struct FullscreenImageView: View {
 
 extension UIImage: @retroactive Identifiable {
     public var id: ObjectIdentifier { ObjectIdentifier(self) }
+}
+
+// MARK: - Edit History Sheet
+
+struct EditHistorySheet: View {
+    let item: InputItem
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        NavigationStack {
+            List {
+                if let edits = item.edits, !edits.isEmpty {
+                    Section {
+                        ForEach(edits) { edit in
+                            VStack(alignment: .leading, spacing: 6) {
+                                let parts = computeWordDiff(old: edit.oldContent, new: item.content)
+                                buildDiffText(parts: parts)
+                                    .font(.subheadline)
+
+                                Text(formatTime(edit.editedAt))
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
+                            }
+                            .padding(.vertical, 4)
+                        }
+                    } header: {
+                        HStack {
+                            Text("Previous Versions")
+                            Spacer()
+                            Text("\(edits.count)")
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 2)
+                                .background(.quaternary)
+                                .clipShape(Capsule())
+                        }
+                    }
+                }
+            }
+            .navigationTitle("Edit History")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Done") {
+                        dismiss()
+                    }
+                    .foregroundStyle(Color.dcBlue)
+                }
+            }
+        }
+    }
 }
 
 #Preview {

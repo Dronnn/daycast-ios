@@ -17,3 +17,17 @@ Implement the Design V2 visual overhaul for the DayCast iOS app to match the new
 - [x] 10. Update BlogView.swift — card styling, scroll reveal
 - [x] 11. Update BlogPostDetailView.swift — card styling
 - [x] 12. Verify all files for syntax correctness
+
+---
+
+# Add Edit History Sheet + Context Menu to FeedView
+
+## Task
+Add an edit history sheet and context menu option to FeedView for viewing word-level diffs of previous item versions. All existing functionality (inline badge expansion, context menu items) must be preserved.
+
+## Steps
+
+- [x] 1. Add `@State private var editHistoryItem: InputItem?` state variable
+- [x] 2. Add "Edit History" context menu option to existing context menu
+- [x] 3. Create `EditHistorySheet` struct with NavigationStack, List, word-level diffs, and Done button
+- [x] 4. Add `.sheet(item: $editHistoryItem)` modifier with presentation detents
