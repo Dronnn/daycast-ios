@@ -16,6 +16,7 @@ struct daycastApp: App {
             CachedGenerationResult.self,
             CachedDaySummary.self,
             CachedChannelSetting.self,
+            CachedBlogPost.self,
             PendingSyncOperation.self,
         ])
         let config = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)

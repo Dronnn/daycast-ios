@@ -219,6 +219,69 @@ final class CachedChannelSetting {
     }
 }
 
+// MARK: - Cached Blog Post
+
+@Model
+final class CachedBlogPost {
+    #Index<CachedBlogPost>([\.slug], [\.channelId])
+
+    var postId: String
+    var slug: String
+    var channelId: String?
+    var style: String?
+    var language: String?
+    var text: String
+    var date: String
+    var publishedAt: String
+    var inputItemsPreview: [String]
+    var source: String?
+    var cachedAt: Date
+
+    init(postId: String, slug: String, channelId: String?, style: String?, language: String?, text: String, date: String, publishedAt: String, inputItemsPreview: [String], source: String?, cachedAt: Date = .now) {
+        self.postId = postId
+        self.slug = slug
+        self.channelId = channelId
+        self.style = style
+        self.language = language
+        self.text = text
+        self.date = date
+        self.publishedAt = publishedAt
+        self.inputItemsPreview = inputItemsPreview
+        self.source = source
+        self.cachedAt = cachedAt
+    }
+
+    convenience init(from post: PublishedPostResponse) {
+        self.init(
+            postId: post.id,
+            slug: post.slug,
+            channelId: post.channelId,
+            style: post.style,
+            language: post.language,
+            text: post.text,
+            date: post.date,
+            publishedAt: post.publishedAt,
+            inputItemsPreview: post.inputItemsPreview,
+            source: post.source
+        )
+    }
+
+    func toApiModel() -> PublishedPostResponse {
+        PublishedPostResponse(
+            id: postId,
+            slug: slug,
+            channelId: channelId,
+            style: style,
+            language: language,
+            text: text,
+            date: date,
+            publishedAt: publishedAt,
+            inputItemsPreview: inputItemsPreview,
+            source: source
+        )
+    }
+}
+
 // MARK: - Pending Sync Operation
 
 @Model
