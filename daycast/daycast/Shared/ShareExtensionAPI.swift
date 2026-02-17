@@ -36,7 +36,7 @@ enum ShareAPIError: LocalizedError {
 }
 
 struct ShareAPIClient {
-    static let baseURL = "http://192.168.31.131:8000/api/v1"
+    static let baseURL = "https://daycast.mrmaier.com/api/v1"
 
     static func createItem(type: ShareInputType, content: String) async throws -> ShareInputItem {
         guard let token = SharedTokenStorage.getToken() else {

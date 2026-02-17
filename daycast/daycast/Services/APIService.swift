@@ -35,7 +35,7 @@ extension Notification.Name {
 struct APIService: Sendable {
     static let shared = APIService()
 
-    let baseURL = "http://192.168.31.131:8000/api/v1"
+    let baseURL = "https://daycast.mrmaier.com/api/v1"
 
     private let decoder: JSONDecoder = {
         let d = JSONDecoder()
